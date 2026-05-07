@@ -1,0 +1,39 @@
+###############################################################################
+# Zeitghost CI — runs on every pull request
+#
+# Validates code: install deps, run tests. No deploys.
+###############################################################################
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+        with:
+          repository: aaronmarkham/spiritwriter-core
+          ref: main
+          token: ${{ secrets.SW_CORE_PAT }}
+          path: spiritwriter-core
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install deps
+        run: |
+          pip install ./spiritwriter-core
+          pip install -e ".[dev]"
+
+      - name: Run tests
+        run: python -m pytest tests/ -v --tb=short

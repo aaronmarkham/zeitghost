@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="slider-bar" aria-label="Bias preference slider">
+    <label for="bias-slider">
+        <span>Left</span>
+        <input id="bias-slider" type="range" min="0" max="100" value="50" step="1">
+        <span>Right</span>
+    </label>
+    <p class="slider-status" id="slider-status">Showing original framing</p>
+</section>
+
+<section class="articles">
+    {% for article in articles %}
+    <article class="card" data-bias="{{ '%.2f' | format(article.bias_score) }}" data-bias-label="{{ article.bias_label }}">
+        <p class="meta">
+            <span class="source">{{ article.original.source_name }}</span>
+            <span class="bias-badge bias-{{ article.bias_label }}">{{ article.bias_label }} &middot; {{ '%.2f' | format(article.bias_score) }}</span>
+            <span class="date">{{ article.original.published[:10] }}</span>
+        </p>
+
+        <div class="variant variant-left" hidden>
+            <h2>{{ article.variant_left_title }}</h2>
+            <p>{{ article.variant_left_summary }}</p>
+        </div>
+        <div class="variant variant-original">
+            <h2>{{ article.original.title }}</h2>
+            <p>{{ article.original.summary }}</p>
+        </div>
+        <div class="variant variant-right" hidden>
+            <h2>{{ article.variant_right_title }}</h2>
+            <p>{{ article.variant_right_summary }}</p>
+        </div>
+
+        <p class="source-link"><a href="{{ article.original.url }}" rel="noopener">Read original at {{ article.original.source_name }}</a></p>
+    </article>
+    {% endfor %}
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="static/js/slider.js"></script>
+{% endblock %}

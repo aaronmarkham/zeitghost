@@ -1,0 +1,130 @@
+---
+# ansible/deploy.yml
+# Deploy Zeitghost Docker stack to the target node.
+#
+# Usage:
+#   ansible-playbook deploy.yml -i inventories/us-ny1/hosts.yml
+#
+# Requires: spiritwriter-core wheel in infra/docker/wheels/
+#   Run ./infra/docker/build-wheels.sh first (or CI does it).
+
+- name: Deploy Zeitghost
+  hosts: core
+  serial: "{{ deploy_serial | default('100%') }}"
+
+  vars:
+    zeitghost_src: "{{ playbook_dir }}/../.."
+    zeitghost_dest: "{{ zeitghost_deploy_root | default('/opt/zeitghost') }}"
+
+  tasks:
+    - name: Create deploy directory
+      ansible.builtin.file:
+        path: "{{ zeitghost_dest }}/{{ item }}"
+        state: directory
+        mode: "0755"
+      loop:
+        - ""
+        - zeitghost
+        - feeds
+        - templates
+        - static
+        - scripts
+        - infra/docker/wheels
+
+    - name: Sync source code
+      ansible.posix.synchronize:
+        src: "{{ zeitghost_src }}/{{ item.src }}"
+        dest: "{{ zeitghost_dest }}/{{ item.dest }}"
+        delete: true
+        rsync_opts:
+          - "--exclude=__pycache__"
+          - "--exclude=*.pyc"
+          - "--exclude=.env"
+          - "--exclude=wheels/"
+          - "--exclude=output/"
+      loop:
+        - { src: "zeitghost/", dest: "zeitghost/" }
+        - { src: "feeds/", dest: "feeds/" }
+        - { src: "templates/", dest: "templates/" }
+        - { src: "static/", dest: "static/" }
+        - { src: "scripts/", dest: "scripts/" }
+        - { src: "infra/docker/", dest: "infra/docker/" }
+      notify: restart zeitghost
+
+    - name: Sync project files
+      ansible.builtin.copy:
+        src: "{{ zeitghost_src }}/{{ item }}"
+        dest: "{{ zeitghost_dest }}/{{ item }}"
+        mode: "0644"
+      loop:
+        - pyproject.toml
+      notify: restart zeitghost
+
+    - name: Sync spiritwriter-core wheel
+      ansible.posix.synchronize:
+        src: "{{ zeitghost_src }}/infra/docker/wheels/"
+        dest: "{{ zeitghost_dest }}/infra/docker/wheels/"
+        delete: true
+
+    - name: Template .env file
+      ansible.builtin.template:
+        src: env.j2
+        dest: "{{ zeitghost_dest }}/infra/docker/.env"
+        mode: "0600"
+      notify: restart zeitghost
+
+    - name: Remove legacy containers
+      ansible.builtin.command:
+        cmd: docker rm -f zeitghost-builder zeitghost-nginx
+      ignore_errors: true
+
+    - name: Create host shard directory (for bind mount)
+      ansible.builtin.file:
+        path: "{{ zeitghost_host_shards }}"
+        state: directory
+        mode: "0755"
+      when: zeitghost_host_shards is defined
+
+    - name: Build Docker images
+      ansible.builtin.command:
+        cmd: docker compose build
+        chdir: "{{ zeitghost_dest }}/infra/docker"
+      environment:
+        PATH: "/usr/local/bin:{{ ansible_env.PATH }}"
+      register: build_result
+      changed_when: "'Built' in build_result.stdout"
+
+    - name: Start Docker stack
+      ansible.builtin.command:
+        cmd: docker compose up -d
+        chdir: "{{ zeitghost_dest }}/infra/docker"
+      environment:
+        PATH: "/usr/local/bin:{{ ansible_env.PATH }}"
+      register: compose_result
+      changed_when: "'Started' in compose_result.stderr or 'Recreated' in compose_result.stderr"
+
+    - name: Wait for nginx health
+      ansible.builtin.uri:
+        url: "http://{{ ansible_host }}:{{ zeitghost_nginx_port | default(80) }}/healthz"
+        method: GET
+        status_code: 200
+      register: health
+      until: health.status == 200
+      retries: 10
+      delay: 3
+      ignore_errors: true
+
+    - name: Fail deploy if health check failed
+      ansible.builtin.fail:
+        msg: >
+          Zeitghost nginx health check failed after
+          {{ health.attempts | default('?') }} retries.
+      when: health is failed
+
+  handlers:
+    - name: restart zeitghost
+      ansible.builtin.command:
+        cmd: docker compose restart
+        chdir: "{{ zeitghost_dest }}/infra/docker"
+      environment:
+        PATH: "/usr/local/bin:{{ ansible_env.PATH }}"

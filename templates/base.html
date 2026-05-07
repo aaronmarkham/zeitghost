@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ site_name }}{% endblock %}</title>
+    <link rel="stylesheet" href="static/css/style.css">
+</head>
+<body>
+    <header>
+        <h1><a href="index.html">{{ site_name }}</a></h1>
+        <p class="tagline">{{ site_tagline }}</p>
+        <nav>
+            <a href="index.html">Home</a>
+            <a href="analytics.html">Source Bias</a>
+        </nav>
+    </header>
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+    <footer>
+        <p>Updated {{ generated_at[:10] }} &mdash; {{ total_articles }} articles from {{ source_count }} sources</p>
+    </footer>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

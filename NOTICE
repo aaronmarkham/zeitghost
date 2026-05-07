@@ -1,5 +1,9 @@
-Apache Template
-Copyright 2021 The Apache Software Foundation
+Zeitghost
+Copyright 2026 Aaron Markham
 
 This product includes software developed at
-The Apache Software Foundation (http://www.apache.org/).
+Aaron Markham (https://github.com/aaronmarkham).
+
+This product depends on spiritwriter-core
+(https://github.com/aaronmarkham/spiritwriter-core), licensed under the
+Apache License, Version 2.0.

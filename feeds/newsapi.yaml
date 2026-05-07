@@ -1,0 +1,48 @@
+# Zeitghost NewsAPI source config.
+#
+# Each entry under `sources` costs 1 API request from NewsAPI's daily quota.
+# Free tier = 100 req/day. Reserve some headroom for manual / ad-hoc fetches.
+
+daily_quota: 100
+reserve_for_manual: 30  # reserve 30/day so the scheduler can't burn the whole quota
+
+sources:
+  # Top headlines per category — these tend to drive the front page
+  - kind: category
+    category: general
+    country: us
+    page_size: 50
+  - kind: category
+    category: business
+    country: us
+    page_size: 50
+  - kind: category
+    category: technology
+    country: us
+    page_size: 50
+  - kind: category
+    category: health
+    country: us
+    page_size: 50
+
+  # Free-text queries for topical buckets NewsAPI categorizes poorly
+  - kind: query
+    query: "politics OR senate OR congress OR election"
+    language: en
+    page_size: 50
+    categories: [politics]
+  - kind: query
+    query: "immigration OR border OR ICE OR asylum"
+    language: en
+    page_size: 50
+    categories: [immigration]
+  - kind: query
+    query: "economy OR inflation OR jobs OR unemployment"
+    language: en
+    page_size: 50
+    categories: [economy]
+  - kind: query
+    query: "climate OR environment OR EPA OR emissions"
+    language: en
+    page_size: 50
+    categories: [environment]
