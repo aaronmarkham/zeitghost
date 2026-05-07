@@ -22,7 +22,9 @@ pip install -e ".[dev]"
 zeitghost ingest                    # fetch newest from NewsAPI, analyze, write shards
 zeitghost build                     # render static site from shard store
 zeitghost analytics                 # regenerate source-bias rollup page
-zeitghost import-legacy <dump.sql>  # one-shot: HtmxNewsEngine SQL dump → sw:article shards
+zeitghost import-legacy --db-url postgresql://...  # seed shards from a temp Postgres
+                                    # (see `zeitghost import-legacy --help` for full
+                                    # workflow with HtmxNewsEngine SQL dump)
 ```
 
 ## Configuration

@@ -67,23 +67,18 @@ def test_analytics_compute_stats():
     assert stats[1].count == 2
 
 
-def test_legacy_dump_parser_smoke(tmp_path: Path):
-    """Verify the COPY-block parser handles a tiny synthetic dump."""
-    from scripts.import_legacy_dump import _find_table_blocks
+def test_legacy_dump_helpers_smoke():
+    """Verify the legacy importer's pure helpers handle datetime + bias label."""
+    from datetime import datetime, timezone
 
-    dump = tmp_path / "tiny.sql"
-    dump.write_text(
-        "-- header\n"
-        "COPY public.news_article (id, title, url, abstract, source, "
-        "category, political_bias_score, is_variant, variant_type, "
-        "original_article_id, published_at, created_at) FROM stdin;\n"
-        "1\tHeadline\thttps://e.com/a\tSummary\tCNN\tpolitics\t"
-        "0.42\tf\t\\N\t\\N\t2026-05-07 12:00:00\t2026-05-07 12:00:00\n"
-        "\\.\n",
-        encoding="utf-8",
-    )
-    rows = list(_find_table_blocks(dump, "news_article"))
-    assert len(rows) == 1
-    assert rows[0]["title"] == "Headline"
-    assert rows[0]["political_bias_score"] == "0.42"
-    assert rows[0]["variant_type"] is None
+    from scripts.import_legacy_dump import _to_iso, _label_for
+
+    assert _to_iso(None).endswith("+00:00")
+    dt = datetime(2026, 5, 7, 12, 0, 0)
+    iso = _to_iso(dt)
+    assert iso.startswith("2026-05-07T12:00:00")
+    assert "+00:00" in iso
+
+    assert _label_for(0.1) == "left"
+    assert _label_for(0.5) == "center"
+    assert _label_for(0.95) == "right"

@@ -140,24 +140,44 @@ def analytics(output: str):
 
 
 @main.command(name="import-legacy")
-@click.argument("dump_path", type=click.Path(exists=True))
+@click.option("--db-url", required=True,
+              help="postgresql://user:pass@host:port/dbname (the temp pg "
+                   "container that has the restored HtmxNewsEngine dump)")
 @click.option("--limit", "-n", type=int, default=0,
               help="Cap articles imported (0=all)")
 @click.option("--dry-run", is_flag=True,
-              help="Parse the dump and report what would be imported")
-def import_legacy(dump_path: str, limit: int, dry_run: bool):
-    """One-shot: read an HtmxNewsEngine pg_dump SQL backup → write shards.
+              help="Report what would be imported without writing shards")
+def import_legacy(db_url: str, limit: int, dry_run: bool):
+    """One-shot: read HtmxNewsEngine articles from a temp Postgres → shards.
 
-    Pre-existing OpenAI bias scores and variants from HtmxNewsEngine are
-    preserved (no re-analysis with Claude). Articles already in the shard
-    store are skipped.
+    Workflow (run on us-ny1 from the host shell):
+
+    \b
+      docker run -d --name tmp-pg --network=docker_default \\
+          -e POSTGRES_PASSWORD=tmp -e POSTGRES_DB=legacy postgres:16
+      sleep 5
+      docker cp /path/to/dump.sql tmp-pg:/tmp/dump.sql
+      docker exec -e PGPASSWORD=tmp tmp-pg \\
+          psql -U postgres -d legacy -f /tmp/dump.sql
+      docker exec zeitghost-builder zeitghost import-legacy \\
+          --db-url postgresql://postgres:tmp@tmp-pg:5432/legacy --dry-run
+      # if numbers look right, drop --dry-run
+      docker stop tmp-pg && docker rm tmp-pg
+
+    Pre-existing OpenAI bias scores and L/R variants from HtmxNewsEngine are
+    preserved (no Claude re-analysis). Articles already in the shard store
+    are skipped, as are rows with NULL bias_score (saved before HtmxNewsEngine's
+    async analysis completed).
     """
-    from scripts.import_legacy_dump import import_dump
-    n = import_dump(Path(dump_path), limit=limit, dry_run=dry_run, console=console)
-    if dry_run:
-        console.print(f"[yellow]Dry run — would import {n} articles[/yellow]")
-    else:
-        console.print(f"[green]Imported {n} articles[/green]")
+    from scripts.import_legacy_dump import import_from_db
+    stats = import_from_db(db_url, limit=limit, dry_run=dry_run, console=console)
+    verb = "Would import" if dry_run else "Imported"
+    console.print(
+        f"[green]{verb} {stats['written']} articles[/green] "
+        f"({stats['skipped_partial']} null-bias, "
+        f"{stats['skipped_known']} already known, "
+        f"{stats['total_rows']} total)"
+    )
 
 
 @main.command()

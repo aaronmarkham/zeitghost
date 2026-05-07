@@ -22,7 +22,10 @@ pip install -e ".[dev]"
 zeitghost ingest                    # fetch + analyze + write shards
 zeitghost build                     # render site from shards
 zeitghost analytics                 # source-bias rollup page
-zeitghost import-legacy <dump.sql>  # HtmxNewsEngine SQL → shards
+zeitghost import-legacy --db-url postgresql://user:pass@host/db
+                                    # seed from a temp Postgres holding a
+                                    # restored HtmxNewsEngine dump (see
+                                    # the command's --help for full flow)
 ```
 
 ## Key Files
@@ -36,7 +39,8 @@ zeitghost import-legacy <dump.sql>  # HtmxNewsEngine SQL → shards
 - `zeitghost/cli.py` — Click CLI
 - `templates/` — base.html, index.html (with slider), source.html, analytics.html
 - `static/css/style.css`, `static/js/slider.js` — client-side bias slider
-- `scripts/import_legacy_dump.py` — read HtmxNewsEngine pg_dump → write shards
+- `scripts/import_legacy_dump.py` — read HtmxNewsEngine articles from a temp
+  Postgres (restored from the SQL dump) and write shards
 
 ## Dependencies
 

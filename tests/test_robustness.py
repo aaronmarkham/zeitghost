@@ -25,46 +25,70 @@ REPO_ROOT = Path(__file__).parent.parent
 # Lesson 1: partial-state data must not silently get a default value.
 # ---------------------------------------------------------------------------
 
-def test_legacy_importer_skips_null_bias_rows(tmp_path: Path):
-    """A row with NULL political_bias_score means analysis hadn't completed.
-    The importer must skip such rows, not default them to 0.5 (which would
-    silently mislabel an unanalyzed article as "center")."""
-    from scripts.import_legacy_dump import import_dump
+def test_legacy_importer_skips_null_bias_rows():
+    """A row with NULL political_bias_score means HtmxNewsEngine's async
+    analysis hadn't completed. The importer must skip these rows, not
+    default them to 0.5 (which would silently mislabel an unanalyzed
+    article as "center")."""
+    from scripts.import_legacy_dump import _row_to_components
 
-    dump = tmp_path / "with_null_bias.sql"
-    dump.write_text(
-        "COPY public.news_article (id, title, url, abstract, source, "
-        "category, political_bias_score, is_variant, variant_type, "
-        "original_article_id, published_at, created_at) FROM stdin;\n"
-        # Analyzed article — should be imported
-        "1\tAnalyzed\thttps://e.com/a\tSummary A\tCNN\tpolitics\t"
-        "0.42\tf\t\\N\t\\N\t2026-05-07 12:00:00\t2026-05-07 12:00:00\n"
-        # In-flight article — saved but bias_score is NULL — should be SKIPPED
-        "2\tInflight\thttps://e.com/b\tSummary B\tFOX\tpolitics\t"
-        "\\N\tf\t\\N\t\\N\t2026-05-07 12:00:00\t2026-05-07 12:00:00\n"
-        "\\.\n",
-        encoding="utf-8",
-    )
-    written = import_dump(dump, dry_run=True)
-    assert written == 1, "expected the analyzed row imported, the NULL-bias row skipped"
+    # Analyzed article — should be parsed
+    ok = _row_to_components({
+        "title": "A", "url": "https://e.com/a", "abstract": "S", "source": "CNN",
+        "category": "politics", "political_bias_score": 0.42,
+        "is_variant": False, "variant_type": None,
+        "published_at": None, "created_at": None,
+    })
+    assert ok is not None
+    assert ok[1] == 0.42
+
+    # In-flight — bias_score is NULL — must be skipped
+    skipped = _row_to_components({
+        "title": "B", "url": "https://e.com/b", "abstract": "S", "source": "FOX",
+        "category": "politics", "political_bias_score": None,
+        "is_variant": False, "variant_type": None,
+        "published_at": None, "created_at": None,
+    })
+    assert skipped is None
 
 
-def test_legacy_importer_skips_malformed_bias(tmp_path: Path):
-    """Bias columns containing garbage strings should be skipped, not
-    silently coerced to a default."""
-    from scripts.import_legacy_dump import import_dump
+def test_legacy_importer_skips_malformed_bias():
+    """Garbage values in political_bias_score (non-numeric) should be skipped
+    rather than silently coerced to a default."""
+    from scripts.import_legacy_dump import _row_to_components
 
-    dump = tmp_path / "garbage_bias.sql"
-    dump.write_text(
-        "COPY public.news_article (id, title, url, abstract, source, "
-        "category, political_bias_score, is_variant, variant_type, "
-        "original_article_id, published_at, created_at) FROM stdin;\n"
-        "1\tA\thttps://e.com/a\tS\tCNN\tpolitics\t"
-        "not-a-float\tf\t\\N\t\\N\t2026-05-07 12:00:00\t2026-05-07 12:00:00\n"
-        "\\.\n",
-        encoding="utf-8",
-    )
-    assert import_dump(dump, dry_run=True) == 0
+    skipped = _row_to_components({
+        "title": "A", "url": "https://e.com/a", "abstract": "S", "source": "CNN",
+        "category": "politics", "political_bias_score": "not-a-float",
+        "is_variant": False, "variant_type": None,
+        "published_at": None, "created_at": None,
+    })
+    assert skipped is None
+
+
+def test_legacy_importer_pairs_originals_with_variants():
+    """Originals are linked to their left/right variants via
+    original_article_id. The combined AnalyzedArticle should carry both."""
+    from scripts.import_legacy_dump import _build_analyzed
+
+    original = {
+        "id": 1, "title": "Bill passes", "url": "https://e.com/bill",
+        "abstract": "A bill passed", "source": "AP", "category": "politics",
+        "political_bias_score": 0.55, "is_variant": False, "variant_type": None,
+        "published_at": None, "created_at": None,
+    }
+    variants = {
+        "left": {"title": "Progressive bill passes",
+                 "abstract": "A progressive bill passed"},
+        "right": {"title": "Conservative bill passes",
+                  "abstract": "A conservative bill passed"},
+    }
+    analyzed = _build_analyzed(original, variants)
+    assert analyzed is not None
+    assert analyzed.bias_score == 0.55
+    assert analyzed.bias_label == "center"
+    assert analyzed.variant_left_title == "Progressive bill passes"
+    assert analyzed.variant_right_title == "Conservative bill passes"
 
 
 def test_template_renders_with_full_data():

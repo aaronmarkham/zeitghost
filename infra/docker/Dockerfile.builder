@@ -17,7 +17,8 @@ COPY infra/docker/wheels/ ./wheels/
 RUN pip install --no-cache-dir --prefix=/install wheels/*.whl && \
     pip install --no-cache-dir --prefix=/install \
         "anthropic>=0.40.0" "requests>=2.31" "jinja2>=3.1" \
-        "click>=8.1" "rich>=13.0" "pyyaml>=6.0"
+        "click>=8.1" "rich>=13.0" "pyyaml>=6.0" \
+        "psycopg2-binary>=2.9"
 
 # ---------------------------------------------------------------------------
 FROM python:3.12-slim
