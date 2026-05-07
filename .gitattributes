@@ -1,0 +1,11 @@
+* text=auto eol=lf
+
+# Shell scripts must stay LF — CRLF breaks the shebang on Linux
+*.sh text eol=lf
+
+# Other files that get executed or parsed strictly
+*.py text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+Dockerfile* text eol=lf
+*.j2 text eol=lf
