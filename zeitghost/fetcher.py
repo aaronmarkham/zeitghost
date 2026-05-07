@@ -6,6 +6,7 @@ in a small JSON file alongside the shard store and refuse to over-fetch.
 
 import json
 import logging
+import os
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -69,11 +70,25 @@ def _save_quota(state_dir: Path, used: int) -> None:
 
 
 def _api_key() -> str:
-    key = keychain.get_api_key("newsapi")
+    """Resolve the NewsAPI key.
+
+    Env var wins (works in any environment including Docker containers
+    without a keyring backend). Falls back to spiritwriter's keychain for
+    local-dev convenience.
+    """
+    key = os.environ.get("NEWS_API_KEY")
+    if not key:
+        try:
+            key = keychain.get_api_key("newsapi")
+        except Exception as e:
+            log.debug("Keychain lookup failed: %s", e)
+            key = None
     if not key:
         raise RuntimeError(
-            "NewsAPI key not found. Set via "
-            "`spiritwriter.secrets.keychain.set_api_key('newsapi', '...')`."
+            "NewsAPI key not found. Either set the NEWS_API_KEY env var "
+            "(production) or configure via "
+            "`spiritwriter.secrets.keychain.set_api_key('newsapi', '...')` "
+            "(local dev)."
         )
     return key
 
