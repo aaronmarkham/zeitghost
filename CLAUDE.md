@@ -66,6 +66,15 @@ Two shard scopes per article (mirror perseus's pattern):
 
 us-ny1 (Ubuntu, Tailscale-meshed, NY). Docker stack: `builder` (loops `zeitghost ingest && zeitghost build`) + `nginx` (serves `output/`). Behind Cloudflare for TLS. CI/CD via GitHub Actions: PR runs tests; push-to-main builds spiritwriter-core wheel, deploys via Ansible-over-Tailscale.
 
+## Robustness invariants (production-debug lessons)
+
+Two real bugs hit HtmxNewsEngine prod on 2026-05-06 that we want to keep out of zeitghost:
+
+1. **No partial-state data reaches renderers.** Articles enriched by async LLM analysis can sit in storage with NULL bias before analysis completes. zeitghost's ingest pipeline writes shards only after analysis succeeds — and the legacy-dump importer skips rows with NULL `political_bias_score` rather than defaulting them to 0.5 (which would silently mislabel an unanalyzed article as "center"). When adding new fields enriched by async work, follow the same rule: skip or guard, never default-fill.
+2. **No file I/O at module-import time.** Logging, config loaders, and cache singletons must defer to `main()` / runtime, never run at import. Production containers are a clean slate — no `logs/`, no `output/`, no `.env`. CI runs `python -c "import zeitghost"` from a fresh empty cwd to catch regressions.
+
+Both are also encoded in `tests/test_robustness.py`.
+
 ## Notes
 
 - Initial article corpus came from HtmxNewsEngine's PostgreSQL dump (~46MB, ~tens of thousands of articles with prior OpenAI bias scores). Use `zeitghost import-legacy` to seed shards from that dump.

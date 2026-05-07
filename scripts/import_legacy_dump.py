@@ -105,17 +105,25 @@ def _to_iso(raw: str | None) -> str:
 
 
 def _row_to_components(row: dict) -> tuple[Article, float, str | None] | None:
-    """Map a NewsArticle row to (Article, bias_score, variant_type)."""
+    """Map a NewsArticle row to (Article, bias_score, variant_type).
+
+    Returns None for rows that were saved before async bias analysis finished
+    (NULL political_bias_score). Defaulting these to 0.5 would silently
+    mislabel unanalyzed articles as "center" — see HtmxNewsEngine prod bug
+    where this exact pattern caused page-load 500s.
+    """
     url = row.get("url")
     title = row.get("title")
     if not url or not title:
         return None
 
     bias_raw = row.get("political_bias_score")
+    if bias_raw is None or bias_raw == "":
+        return None  # row was in-flight: saved but not yet analyzed
     try:
-        bias = float(bias_raw) if bias_raw is not None else 0.5
+        bias = float(bias_raw)
     except ValueError:
-        bias = 0.5
+        return None
 
     article = Article(
         title=title,
@@ -166,18 +174,22 @@ def import_dump(dump_path: Path, *, limit: int = 0,
             variants_for[orig_id][vtype] = r
 
     # Build AnalyzedArticles from originals only
-    store = init_store()
-    known = known_url_entities(store)
+    store = init_store() if not dry_run else None
+    known = known_url_entities(store) if store else set()
     written = 0
+    skipped_partial = 0  # rows with NULL bias — saved before analysis ran
     for r in rows:
         is_variant = (r.get("is_variant") or "").lower() in ("t", "true", "1")
         if is_variant:
             continue
         comp = _row_to_components(r)
         if not comp:
+            # Track rows skipped for missing/null bias specifically
+            if r.get("url") and r.get("title") and not r.get("political_bias_score"):
+                skipped_partial += 1
             continue
         original, bias, _ = comp
-        if is_known(original.url, known):
+        if store and is_known(original.url, known):
             continue
 
         vmap = variants_for.get(r.get("id") or "", {})
@@ -204,6 +216,13 @@ def import_dump(dump_path: Path, *, limit: int = 0,
             console.print(f"  imported {written} so far...")
         if limit and written >= limit:
             break
+
+    if skipped_partial:
+        msg = (f"Skipped {skipped_partial} rows with NULL bias_score "
+               f"(saved before async analysis completed)")
+        log.info(msg)
+        if console:
+            console.print(f"  [yellow]{msg}[/yellow]")
 
     return written
 

@@ -51,6 +51,12 @@ jobs:
       - name: Run tests
         run: python -m pytest tests/ -v --tb=short
 
+      - name: Verify clean-cwd import (production container parity)
+        run: |
+          mkdir -p /tmp/clean-import-test
+          cd /tmp/clean-import-test
+          python -c "import zeitghost; from zeitghost.cli import main; print('ok')"
+
   build-wheel:
     needs: test
     if: github.ref == 'refs/heads/main'

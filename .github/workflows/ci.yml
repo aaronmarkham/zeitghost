@@ -37,3 +37,13 @@ jobs:
 
       - name: Run tests
         run: python -m pytest tests/ -v --tb=short
+
+      # Mirror what a fresh production container looks like — no cwd-relative
+      # state. Catches module-import-time file I/O (logs/, output/, .env)
+      # that would silently 500 in prod. See HtmxNewsEngine 2026-05-06 bug
+      # in routes/main.py — RotatingFileHandler at import time.
+      - name: Verify clean-cwd import (production container parity)
+        run: |
+          mkdir -p /tmp/clean-import-test
+          cd /tmp/clean-import-test
+          python -c "import zeitghost; from zeitghost.cli import main; print('ok')"
