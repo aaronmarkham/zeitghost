@@ -10,6 +10,12 @@
 </section>
 
 <section class="articles">
+    {% if not articles %}
+    <article class="card empty-state">
+        <h2>No articles ingested yet</h2>
+        <p>The first ingest cycle is running — Claude is analyzing the latest NewsAPI batch and writing shards. Articles typically appear within a few minutes of the first deploy. Refresh in a bit.</p>
+    </article>
+    {% endif %}
     {% for article in articles %}
     <article class="card" data-bias="{{ '%.2f' | format(article.bias_score) }}" data-bias-label="{{ article.bias_label }}">
         <p class="meta">

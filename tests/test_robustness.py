@@ -101,6 +101,30 @@ def test_template_renders_with_full_data():
     assert 'data-bias="0.42"' in rendered             # slider data attr
 
 
+def test_build_renders_with_empty_shards(tmp_path: Path):
+    """Build must always emit index.html even when shards are empty.
+
+    Otherwise nginx falls through to whatever was in /usr/share/nginx/html
+    when the named volume was first created — which on nginx:alpine is
+    the welcome page. Caught on us-ny1's first deploy.
+    """
+    from jinja2 import Environment, FileSystemLoader
+
+    env = Environment(
+        loader=FileSystemLoader(str(REPO_ROOT / "templates")),
+        autoescape=True,
+    )
+    rendered = env.get_template("index.html").render(
+        articles=[], site_name="Test", site_tagline="t",
+        generated_at="2026-05-07T00:00:00", total_articles=0, source_count=0,
+    )
+    # The empty-state placeholder must be present so visitors don't see a
+    # blank page or stale welcome content
+    assert "No articles ingested yet" in rendered
+    # Slider markup is still there even with no articles
+    assert "bias-slider" in rendered
+
+
 def test_template_renders_with_empty_variants():
     """If analysis returned partial data (empty variant strings), the
     template must still render — slider just won't have anything new to show."""

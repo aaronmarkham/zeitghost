@@ -88,7 +88,12 @@ def ingest(feeds: str, limit: int, max_requests: int | None, dry_run: bool):
 @click.option("--max-articles", type=int, default=100,
               help="Limit articles rendered on index page")
 def build(output: str, site_name: str, site_tagline: str, max_articles: int):
-    """Render the static site from existing shards (no API calls)."""
+    """Render the static site from existing shards (no API calls).
+
+    Always renders — even with zero articles — so nginx never serves stale
+    content (e.g. the nginx:alpine welcome page that ships in the named
+    volume on first launch).
+    """
     from zeitghost.shards import init_store, load_articles_from_shards
     from zeitghost.generator import generate_site
 
@@ -96,8 +101,7 @@ def build(output: str, site_name: str, site_tagline: str, max_articles: int):
     articles = load_articles_from_shards(store)
     console.print(f"[bold]Loaded {len(articles)} articles from shard store[/bold]")
     if not articles:
-        console.print("[yellow]No articles in shard store — run `zeitghost ingest` first[/yellow]")
-        return
+        console.print("[yellow]Shard store empty — rendering placeholder page[/yellow]")
 
     out = generate_site(
         articles=articles,
