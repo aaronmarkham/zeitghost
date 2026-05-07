@@ -16,7 +16,10 @@ services:
     container_name: zeitghost-init
     volumes:
       - site-data:/output
-      - shard-data:/shards
+      # Must reference the SAME source as builder so that when
+      # ZEITGHOST_HOST_SHARDS points at a host bind mount, init-data
+      # chowns the actual storage builder will write to.
+      - ${ZEITGHOST_HOST_SHARDS:-shard-data}:/shards
     entrypoint: ["sh", "-c", "chown -R 1000:1000 /output /shards"]
 
   builder:
