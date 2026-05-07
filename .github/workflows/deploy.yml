@@ -137,8 +137,7 @@ jobs:
           # Give the builder a moment to render the initial site
           sleep 10
           for i in $(seq 1 10); do
-            # Replace with us-ny1's Tailscale IP once known
-            RESP=$(curl -sf "http://us-ny1/healthz" 2>/dev/null || echo "")
+            RESP=$(curl -sf "http://100.120.169.33/healthz" 2>/dev/null || echo "")
             if echo "$RESP" | grep -q "ok"; then
               echo "Health check passed (attempt $i)"
               exit 0
