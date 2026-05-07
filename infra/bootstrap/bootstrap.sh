@@ -21,6 +21,12 @@
 # OPTIONAL ENV VARS:
 #   DEPLOY_USER        Default: frionode. Cross-node convention.
 #   SWAP_GB            Default: 2. Skipped if any swap is already enabled.
+#   TAILSCALE_SSH      Default: 0 (off). Set to "1" to enable Tailscale SSH
+#                      (`tailscale up --ssh`). When ON, Tailscale intercepts
+#                      ALL port-22 traffic from tailnet peers and gates it by
+#                      the tailnet policy file — so CI/ansible deploys also
+#                      need an ACL rule. Leave OFF unless you've added the
+#                      matching `ssh` block to your tailnet policy.
 #
 # Usage:
 #   # Phase 1: copy script up and run as root
@@ -41,6 +47,7 @@ set -euo pipefail
 
 DEPLOY_USER="${DEPLOY_USER:-frionode}"
 SWAP_GB="${SWAP_GB:-2}"
+TAILSCALE_SSH="${TAILSCALE_SSH:-0}"
 HARDEN_MODE=false
 if [[ "${1:-}" == "--harden" ]]; then HARDEN_MODE=true; fi
 
@@ -157,24 +164,33 @@ default_phase() {
     if ! command -v tailscale >/dev/null 2>&1; then
         curl -fsSL https://tailscale.com/install.sh | sh
     fi
+    # Build `tailscale up` args; --ssh is OFF by default because it intercepts
+    # all port-22 tailnet traffic and gates it by the tailnet policy, which
+    # breaks CI/ansible deploys unless the policy file is updated to match.
+    UP_ARGS=(--authkey="$TAILSCALE_AUTHKEY" --hostname="$NODE_NAME" --accept-dns=false)
+    if [[ "$TAILSCALE_SSH" == "1" ]]; then
+        UP_ARGS+=(--ssh)
+    fi
     if ! tailscale status >/dev/null 2>&1 || \
        ! tailscale status --json 2>/dev/null | grep -q '"BackendState":"Running"'; then
         if [[ -z "${TAILSCALE_AUTHKEY:-}" ]]; then
             err "TAILSCALE_AUTHKEY required (Tailscale not yet authenticated)"
         fi
-        tailscale up --authkey="$TAILSCALE_AUTHKEY" --ssh \
-                     --hostname="$NODE_NAME" --accept-dns=false
-        log "    Tailscale up as $NODE_NAME"
+        tailscale up "${UP_ARGS[@]}"
+        log "    Tailscale up as $NODE_NAME (ssh=$TAILSCALE_SSH)"
     else
-        # Already up — make sure the Tailscale name matches NODE_NAME
-        # (handles re-runs where NODE_NAME has been changed)
+        # Already up — reconcile hostname and ssh flag without re-authenticating
         CURRENT_TS_NAME=$(tailscale status --json 2>/dev/null | grep -oE '"Self":\s*\{[^}]*"HostName":\s*"[^"]*"' | grep -oE '"HostName":\s*"[^"]*"' | sed 's/.*"HostName":\s*"\([^"]*\)".*/\1/')
         if [[ -n "$CURRENT_TS_NAME" && "$CURRENT_TS_NAME" != "$NODE_NAME" ]]; then
             tailscale set --hostname="$NODE_NAME"
             log "    Tailscale renamed: $CURRENT_TS_NAME → $NODE_NAME"
-        else
-            log "    Tailscale already running as $NODE_NAME"
         fi
+        if [[ "$TAILSCALE_SSH" == "1" ]]; then
+            tailscale set --ssh
+        else
+            tailscale set --ssh=false
+        fi
+        log "    Tailscale running as $NODE_NAME (ssh=$TAILSCALE_SSH)"
     fi
 
     log "6/9  Docker engine + compose plugin (official repo)"

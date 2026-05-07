@@ -11,9 +11,11 @@ node, idempotent, two-phase.
    Vultr/DO/etc. images come up with generic names like `vultr` or `ubuntu`
 3. Creates the `frionode` deploy user (cross-project convention) with `sudo NOPASSWD`
 4. Installs the deploy public key into `~frionode/.ssh/authorized_keys`
-5. Installs Tailscale and authenticates with `--ssh` enabled, registering as
-   `NODE_NAME` (re-runs also rename the existing Tailscale machine if you
-   change `NODE_NAME`)
+5. Installs Tailscale and authenticates, registering as `NODE_NAME`.
+   `--ssh` is **off** by default — when on, Tailscale intercepts all port-22
+   traffic from tailnet peers and gates by the tailnet policy file, which
+   breaks plain-SSH ansible deploys. Plain SSH over the Tailscale IP
+   (authorized_keys) works fine either way. Set `TAILSCALE_SSH=1` to opt in.
 6. Installs Docker Engine + `compose` plugin from the official Docker apt repo
 7. Configures UFW: deny incoming, allow `OpenSSH`/`80`/`443`
 8. Enables `unattended-upgrades` for security patches
@@ -32,6 +34,7 @@ don't lock yourself out. Once you've verified Tailscale SSH works, re-run with
 | `TAILSCALE_AUTHKEY` | first run only    | Generate at https://login.tailscale.com/admin/settings/keys (reusable or one-shot, tagged `tag:server` if you have ACLs). |
 | `DEPLOY_USER`       | optional          | Default `frionode` — keep this unless you have a strong reason. |
 | `SWAP_GB`           | optional          | Default `2`. Skipped if any swap is already configured. |
+| `TAILSCALE_SSH`     | optional          | Default `0` (off). Set to `1` to enable Tailscale SSH (`--ssh`). When ON, Tailscale intercepts ALL port-22 tailnet traffic and gates it by the tailnet policy file — so CI/ansible deploys also need a matching `ssh` ACL block. Leave OFF unless you've added that. |
 
 ## Run order
 
