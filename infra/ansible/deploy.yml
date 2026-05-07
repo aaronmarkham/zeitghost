@@ -90,7 +90,7 @@
         cmd: docker compose build
         chdir: "{{ zeitghost_dest }}/infra/docker"
       environment:
-        PATH: "/usr/local/bin:{{ ansible_env.PATH }}"
+        PATH: "/usr/local/bin:{{ ansible_facts['env']['PATH'] }}"
       register: build_result
       changed_when: "'Built' in build_result.stdout"
 
@@ -99,7 +99,7 @@
         cmd: docker compose up -d
         chdir: "{{ zeitghost_dest }}/infra/docker"
       environment:
-        PATH: "/usr/local/bin:{{ ansible_env.PATH }}"
+        PATH: "/usr/local/bin:{{ ansible_facts['env']['PATH'] }}"
       register: compose_result
       changed_when: "'Started' in compose_result.stderr or 'Recreated' in compose_result.stderr"
 
@@ -127,4 +127,4 @@
         cmd: docker compose restart
         chdir: "{{ zeitghost_dest }}/infra/docker"
       environment:
-        PATH: "/usr/local/bin:{{ ansible_env.PATH }}"
+        PATH: "/usr/local/bin:{{ ansible_facts['env']['PATH'] }}"
