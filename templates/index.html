@@ -17,7 +17,10 @@
     </article>
     {% endif %}
     {% for article in articles %}
-    <article class="card" data-bias="{{ '%.2f' | format(article.bias_score) }}" data-bias-label="{{ article.bias_label }}">
+    <article class="card"
+             data-bias="{{ '%.2f' | format(article.bias_score) }}"
+             data-bias-label="{{ article.bias_label }}"
+             style="border-left-color: {{ article.bias_tint }};">
         <p class="meta">
             <span class="source">{{ article.original.source_name }}</span>
             <span class="bias-badge bias-{{ article.bias_label }}">{{ article.bias_label }} &middot; {{ '%.2f' | format(article.bias_score) }}</span>

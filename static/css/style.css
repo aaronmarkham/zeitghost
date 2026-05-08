@@ -72,6 +72,10 @@ main { padding: 1.5rem 2rem; max-width: 900px; margin: 0 auto; }
 .card {
     background: var(--card);
     border: 1px solid var(--border);
+    /* The left border is the bias indicator — color set inline per article
+     * via `style="border-left-color: ..."`, intensity scales blue↔red
+     * with the bias score. */
+    border-left-width: 5px;
     border-radius: 8px;
     padding: 1.25rem;
 }
@@ -106,6 +110,26 @@ main { padding: 1.5rem 2rem; max-width: 900px; margin: 0 auto; }
 
 /* Variants */
 .variant[hidden] { display: none; }
+
+/* Per-article permalink page — show all 3 variants stacked */
+.article-detail .variant-block {
+    border-top: 1px solid var(--border);
+    padding-top: 1.25rem;
+    margin-top: 1.5rem;
+}
+.article-detail .variant-block:first-of-type {
+    border-top: none;
+    padding-top: 0;
+    margin-top: 1rem;
+}
+.article-detail .variant-heading {
+    margin: 0 0 .35rem;
+    font-size: .75rem;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--muted);
+    font-weight: 600;
+}
 
 /* "Back to all news" link on the per-article permalink page */
 .article-back { margin-top: 1.5rem; }

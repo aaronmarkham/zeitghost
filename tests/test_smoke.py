@@ -49,6 +49,30 @@ def test_permalink_uses_legacy_id_when_present():
     assert a.permalink == "article/46274.html"
 
 
+def test_bias_tint_interpolates_blue_to_red():
+    """Card border color: bias=0 → blue, bias=1 → red, bias=0.5 → midpoint."""
+    from zeitghost.bias import AnalyzedArticle
+    from zeitghost.fetcher import Article
+
+    def tint(score):
+        return AnalyzedArticle(
+            original=Article(title="t", url="https://x", summary="s",
+                             source_name="s", published="2026-05-07T00:00:00+00:00"),
+            bias_score=score, bias_label="x",
+            variant_left_title="", variant_left_summary="",
+            variant_right_title="", variant_right_summary="",
+        ).bias_tint
+
+    # Endpoints land on the existing CSS palette (--left / --right)
+    assert tint(0.0) == "rgb(79, 140, 201)"   # CSS --left
+    assert tint(1.0) == "rgb(217, 100, 88)"   # CSS --right
+    # Midpoint is a smooth interpolation, not pure gray
+    mid = tint(0.5)
+    assert mid.startswith("rgb(") and mid.endswith(")")
+    # Sanity: midpoint should fall between the endpoints on R and B channels
+    assert "rgb(148, 120, 144)" == mid  # exact midpoint of (79..217, 140..100, 201..88)
+
+
 def test_permalink_falls_back_to_url_hash():
     """New articles (no legacy_id) get a stable hash-based permalink."""
     from zeitghost.bias import AnalyzedArticle

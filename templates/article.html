@@ -1,38 +1,34 @@
 {% extends "base.html" %}
 {% block title %}{{ article.original.title[:80] }} &mdash; {{ site_name }}{% endblock %}
-{% block scripts %}
-<script src="../static/js/slider.js"></script>
-{% endblock %}
 {% block content %}
-<section class="slider-bar" aria-label="Bias preference slider">
-    <label for="bias-slider">
-        <span>Left</span>
-        <input id="bias-slider" type="range" min="0" max="100" value="50" step="1">
-        <span>Right</span>
-    </label>
-    <p class="slider-status" id="slider-status">Showing original framing</p>
-</section>
-
 <section class="articles">
-    <article class="card" data-bias="{{ '%.2f' | format(article.bias_score) }}" data-bias-label="{{ article.bias_label }}">
+    <article class="card article-detail"
+             data-bias="{{ '%.2f' | format(article.bias_score) }}"
+             data-bias-label="{{ article.bias_label }}"
+             style="border-left-color: {{ article.bias_tint }};">
         <p class="meta">
             <span class="source">{{ article.original.source_name }}</span>
             <span class="bias-badge bias-{{ article.bias_label }}">{{ article.bias_label }} &middot; {{ '%.2f' | format(article.bias_score) }}</span>
             <span class="date">{{ article.original.published[:10] }}</span>
         </p>
 
-        <div class="variant variant-left" hidden>
-            <h2>{{ article.variant_left_title }}</h2>
-            <p>{{ article.variant_left_summary }}</p>
-        </div>
-        <div class="variant variant-original">
+        <section class="variant-block">
+            <h3 class="variant-heading">Original framing</h3>
             <h2>{{ article.original.title }}</h2>
             <p>{{ article.original.summary }}</p>
-        </div>
-        <div class="variant variant-right" hidden>
+        </section>
+
+        <section class="variant-block">
+            <h3 class="variant-heading bias-left">Left-leaning rewrite</h3>
+            <h2>{{ article.variant_left_title }}</h2>
+            <p>{{ article.variant_left_summary }}</p>
+        </section>
+
+        <section class="variant-block">
+            <h3 class="variant-heading bias-right">Right-leaning rewrite</h3>
             <h2>{{ article.variant_right_title }}</h2>
             <p>{{ article.variant_right_summary }}</p>
-        </div>
+        </section>
 
         <p class="source-link">
             <a href="{{ article.original.url }}" rel="noopener" target="_blank">Read original at {{ article.original.source_name }}</a>

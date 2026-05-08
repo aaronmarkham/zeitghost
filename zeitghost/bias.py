@@ -52,6 +52,23 @@ class AnalyzedArticle:
         """Relative URL of the article's permalink page (used in templates)."""
         return f"article/{self.permalink_slug}.html"
 
+    @property
+    def bias_tint(self) -> str:
+        """CSS color interpolating between blue (bias=0, far left) and
+        red (bias=1, far right). Used as a per-card accent in the templates
+        so the visual intensity tracks how far from center an article is.
+
+        At bias=0.5 the color is muted purple-gray (the midpoint of the two
+        endpoints) — communicating "neutral" without being invisible.
+        """
+        # Endpoints chosen to roughly match the existing CSS palette:
+        # --left  #4f8cc9 (RGB 79, 140, 201)
+        # --right #d96458 (RGB 217, 100, 88)
+        r = round(79 + (217 - 79) * self.bias_score)
+        g = round(140 + (100 - 140) * self.bias_score)
+        b = round(201 + (88 - 201) * self.bias_score)
+        return f"rgb({r}, {g}, {b})"
+
 
 ANALYSIS_PROMPT = """\
 You are analyzing a news article for political bias and producing two
