@@ -118,7 +118,7 @@ def compute_bias_distribution(articles: list[AnalyzedArticle]) -> BiasDistributi
 
 
 def compute_category_stats(articles: list[AnalyzedArticle]) -> list[CategoryStats]:
-    """Per-category mean bias + count. Sorted by mean ascending (left → right)."""
+    """Per-category mean bias + count. Sorted alphabetically by category name."""
     by_cat: dict[str, list[float]] = {}
     for a in articles:
         for cat in a.original.categories:
@@ -130,7 +130,7 @@ def compute_category_stats(articles: list[AnalyzedArticle]) -> list[CategoryStat
                       mean_bias=statistics.fmean(scores))
         for cat, scores in by_cat.items()
     ]
-    out.sort(key=lambda c: c.mean_bias)
+    out.sort(key=lambda c: c.category.lower())
     return out
 
 
@@ -176,5 +176,5 @@ def compute_source_stats(articles: list[AnalyzedArticle]) -> list[SourceStats]:
             most_recent=latest,
         ))
 
-    out.sort(key=lambda s: s.count, reverse=True)
+    out.sort(key=lambda s: s.source_name.lower())
     return out

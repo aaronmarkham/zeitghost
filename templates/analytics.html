@@ -1,5 +1,8 @@
 {% extends "base.html" %}
 {% block title %}Source Bias &mdash; {{ site_name }}{% endblock %}
+{% block scripts %}
+<script src="static/js/analytics.js"></script>
+{% endblock %}
 {% block content %}
 <section class="analytics">
     <h2>News bias analytics</h2>
@@ -136,7 +139,13 @@
     {# All sources, full per-source rollup ------------------------------ #}
     <h3>All sources <span class="muted">(per-source 5-bucket histogram)</span></h3>
     <p class="lead muted">Aggregated bias score (0=far left, 1=far right) across all articles per source. The histogram bars are scaled to article count.</p>
-    <table class="source-stats">
+    <div class="source-filter">
+        <input type="text" id="source-filter-input"
+               placeholder="Filter sources by name…"
+               autocomplete="off" spellcheck="false">
+        <span class="filter-count" id="source-filter-count">{{ stats | length }} sources</span>
+    </div>
+    <table class="source-stats" id="all-sources-table">
         <thead>
             <tr>
                 <th>Source</th>
