@@ -8,7 +8,11 @@ from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader
 
-from zeitghost.analytics import SourceStats, compute_source_stats
+from zeitghost.analytics import (
+    SourceStats, compute_source_stats,
+    compute_overall_stats, compute_bias_distribution, compute_category_stats,
+    top_leaning_sources,
+)
 from zeitghost.bias import AnalyzedArticle
 
 log = logging.getLogger(__name__)
@@ -57,6 +61,11 @@ def generate_site(articles: list[AnalyzedArticle],
     articles = sorted(articles, key=lambda a: a.original.published, reverse=True)
     visible = articles[:max_articles]
     stats = compute_source_stats(articles)
+    overall = compute_overall_stats(articles)
+    bias_distribution = compute_bias_distribution(articles)
+    category_stats = compute_category_stats(articles)
+    left_sources = top_leaning_sources(stats, direction="left")
+    right_sources = top_leaning_sources(stats, direction="right")
     now = datetime.now(timezone.utc).isoformat()
 
     base_ctx = {
@@ -76,13 +85,23 @@ def generate_site(articles: list[AnalyzedArticle],
     log.info("Generated index.html with %d visible articles (of %d total)",
              len(visible), len(articles))
 
-    # --- analytics.html — per-source bias rollup ----------------------------
+    # --- analytics.html — overall + distribution + leaning + categories ---
     analytics_tmpl = env.get_template("analytics.html")
     (output_dir / "analytics.html").write_text(
-        analytics_tmpl.render(stats=stats, **base_ctx),
+        analytics_tmpl.render(
+            stats=stats,
+            overall=overall,
+            bias_distribution=bias_distribution,
+            category_stats=category_stats,
+            left_sources=left_sources,
+            right_sources=right_sources,
+            **base_ctx,
+        ),
         encoding="utf-8",
     )
-    log.info("Generated analytics.html with %d sources", len(stats))
+    log.info("Generated analytics.html (%d sources, %d categories, %d-%d-%d L-C-R)",
+             len(stats), len(category_stats),
+             bias_distribution.left, bias_distribution.center, bias_distribution.right)
 
     # --- articles.json (consumer feed) --------------------------------------
     (output_dir / "articles.json").write_text(
@@ -119,6 +138,11 @@ def generate_analytics_only(articles: list[AnalyzedArticle],
         "total_articles": len(articles),
         "source_count": len(stats),
         "stats": stats,
+        "overall": compute_overall_stats(articles),
+        "bias_distribution": compute_bias_distribution(articles),
+        "category_stats": compute_category_stats(articles),
+        "left_sources": top_leaning_sources(stats, direction="left"),
+        "right_sources": top_leaning_sources(stats, direction="right"),
     }
     (output_dir / "analytics.html").write_text(
         env.get_template("analytics.html").render(**ctx),

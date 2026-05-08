@@ -1,7 +1,5 @@
-"""Per-source bias analytics.
-
-Reads zeitghost:article shards, groups by source_name, and computes
-per-source bias rollups: count, mean, median, distribution histogram.
+"""Bias analytics — overall, per-source, per-category, and bias-distribution
+rollups computed from zeitghost:article shards.
 """
 
 import logging
@@ -12,7 +10,7 @@ from zeitghost.bias import AnalyzedArticle
 
 log = logging.getLogger(__name__)
 
-# Histogram buckets for the bias-score distribution
+# Per-source 5-bucket histogram (used by the all-sources table)
 HISTOGRAM_BUCKETS = [
     (0.0, 0.2, "left"),
     (0.2, 0.4, "center-left"),
@@ -20,6 +18,52 @@ HISTOGRAM_BUCKETS = [
     (0.6, 0.8, "center-right"),
     (0.8, 1.001, "right"),
 ]
+
+# Coarser 3-bucket thresholds (used by the headline distribution + lean
+# labels). Match HtmxNewsEngine's legacy thresholds for parity with the
+# numbers users have been seeing in shared screenshots / ads.
+LEFT_THRESHOLD = 0.48
+RIGHT_THRESHOLD = 0.52
+
+
+def _coarse_lean(score: float) -> str:
+    if score < LEFT_THRESHOLD: return "left"
+    if score > RIGHT_THRESHOLD: return "right"
+    return "center"
+
+
+@dataclass
+class OverallStats:
+    """Top-of-page totals."""
+    total_articles: int
+    total_sources: int
+    total_categories: int
+
+
+@dataclass
+class BiasDistribution:
+    """3-bucket distribution headline (left / center / right)."""
+    left: int
+    center: int
+    right: int
+
+    @property
+    def total(self) -> int:
+        return self.left + self.center + self.right
+
+    def pct(self, n: int) -> float:
+        return (n / self.total * 100) if self.total else 0.0
+
+
+@dataclass
+class CategoryStats:
+    category: str
+    count: int
+    mean_bias: float
+
+    @property
+    def lean(self) -> str:
+        return _coarse_lean(self.mean_bias)
 
 
 @dataclass
@@ -31,12 +75,77 @@ class SourceStats:
     histogram: dict[str, int] = field(default_factory=dict)
     most_recent: str = ""
 
+    @property
+    def lean(self) -> str:
+        return _coarse_lean(self.mean_bias)
+
 
 def _bucket_for(score: float) -> str:
     for lo, hi, label in HISTOGRAM_BUCKETS:
         if lo <= score < hi:
             return label
     return "center"
+
+
+def compute_overall_stats(articles: list[AnalyzedArticle]) -> OverallStats:
+    """Top-line counts: articles, distinct sources, distinct categories."""
+    sources: set[str] = set()
+    categories: set[str] = set()
+    for a in articles:
+        if a.original.source_name:
+            sources.add(a.original.source_name)
+        for cat in a.original.categories:
+            if cat:
+                categories.add(cat)
+    return OverallStats(
+        total_articles=len(articles),
+        total_sources=len(sources),
+        total_categories=len(categories),
+    )
+
+
+def compute_bias_distribution(articles: list[AnalyzedArticle]) -> BiasDistribution:
+    """Three-bucket count using the legacy thresholds (0.48 / 0.52)."""
+    left = center = right = 0
+    for a in articles:
+        if a.bias_score < LEFT_THRESHOLD:
+            left += 1
+        elif a.bias_score > RIGHT_THRESHOLD:
+            right += 1
+        else:
+            center += 1
+    return BiasDistribution(left=left, center=center, right=right)
+
+
+def compute_category_stats(articles: list[AnalyzedArticle]) -> list[CategoryStats]:
+    """Per-category mean bias + count. Sorted by mean ascending (left → right)."""
+    by_cat: dict[str, list[float]] = {}
+    for a in articles:
+        for cat in a.original.categories:
+            if not cat:
+                continue
+            by_cat.setdefault(cat, []).append(a.bias_score)
+    out = [
+        CategoryStats(category=cat, count=len(scores),
+                      mean_bias=statistics.fmean(scores))
+        for cat, scores in by_cat.items()
+    ]
+    out.sort(key=lambda c: c.mean_bias)
+    return out
+
+
+def top_leaning_sources(stats: list[SourceStats], *,
+                        direction: str = "left",
+                        n: int = 10,
+                        min_articles: int = 3) -> list[SourceStats]:
+    """Return the top-N most-leaning sources with at least `min_articles`.
+
+    direction='left'  → sorted ascending by mean_bias (most left first)
+    direction='right' → sorted descending (most right first)
+    """
+    eligible = [s for s in stats if s.count >= min_articles]
+    return sorted(eligible, key=lambda s: s.mean_bias,
+                  reverse=(direction == "right"))[:n]
 
 
 def compute_source_stats(articles: list[AnalyzedArticle]) -> list[SourceStats]:

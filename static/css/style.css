@@ -111,6 +111,94 @@ main { padding: 1.5rem 2rem; max-width: 900px; margin: 0 auto; }
 .card.empty-state { text-align: center; padding: 2.5rem 1.25rem; color: var(--muted); }
 .card.empty-state h2 { color: var(--fg); }
 
+/* Analytics — section spacing */
+.analytics > h2 { margin: 0 0 1.5rem; }
+.analytics > h3 { margin: 2rem 0 1rem; font-size: 1.05rem; }
+.analytics .muted { color: var(--muted); }
+
+/* Top-of-page big stat cards */
+.stat-cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+.stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem 1rem;
+    text-align: center;
+}
+.stat-num {
+    font-size: 2.4rem;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1;
+}
+.stat-label { color: var(--muted); margin-top: .4rem; font-size: .9rem; }
+
+/* Three-bucket bias distribution */
+.bias-distribution {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+.bias-bucket {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+}
+.bucket-num { font-size: 1.8rem; font-weight: 700; line-height: 1; }
+.bucket-label { color: var(--muted); font-size: .85rem; margin: .35rem 0 .6rem; }
+.bucket-range { font-variant-numeric: tabular-nums; }
+.bucket-progress {
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+}
+.bucket-progress-bar { height: 100%; transition: width .3s; }
+.bucket-progress-bar.bias-left   { background: var(--left); }
+.bucket-progress-bar.bias-center { background: var(--center); }
+.bucket-progress-bar.bias-right  { background: var(--right); }
+.bucket-pct { color: var(--muted); font-size: .8rem; margin-top: .35rem; text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Side-by-side leaning-sources */
+.leaning-sources {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+}
+.leaning-half h3 { margin-top: .5rem; }
+
+/* Per-category bias scale (small horizontal track with a marker dot) */
+.cat-scale {
+    position: relative;
+    width: 200px;
+    height: 1rem;
+    background: linear-gradient(to right, var(--left) 0%, var(--center) 50%, var(--right) 100%);
+    border-radius: 4px;
+    opacity: .35;
+}
+.cat-scale-marker {
+    position: absolute;
+    top: -2px;
+    width: 4px;
+    height: calc(100% + 4px);
+    background: var(--fg);
+    transform: translateX(-50%);
+    border-radius: 2px;
+}
+
+@media (max-width: 700px) {
+    .stat-cards, .bias-distribution, .leaning-sources {
+        grid-template-columns: 1fr;
+    }
+}
+
 /* Analytics table */
 .analytics .lead { color: var(--muted); margin-bottom: 1.5rem; }
 .source-stats {
