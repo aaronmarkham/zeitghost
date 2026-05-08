@@ -32,6 +32,49 @@ def test_analyzed_article_dataclass():
     assert a.bias_label == "center"
 
 
+def test_permalink_uses_legacy_id_when_present():
+    """Imported HtmxNewsEngine articles must keep their /article/<int> URL
+    so old shared links resolve."""
+    from zeitghost.bias import AnalyzedArticle
+    from zeitghost.fetcher import Article
+    a = AnalyzedArticle(
+        original=Article(title="t", url="https://x/y", summary="s",
+                         source_name="src", published="2026-05-07T00:00:00+00:00",
+                         legacy_id=46274),
+        bias_score=0.5, bias_label="center",
+        variant_left_title="", variant_left_summary="",
+        variant_right_title="", variant_right_summary="",
+    )
+    assert a.permalink_slug == "46274"
+    assert a.permalink == "article/46274.html"
+
+
+def test_permalink_falls_back_to_url_hash():
+    """New articles (no legacy_id) get a stable hash-based permalink."""
+    from zeitghost.bias import AnalyzedArticle
+    from zeitghost.fetcher import Article
+    a = AnalyzedArticle(
+        original=Article(title="t", url="https://example.com/specific-story",
+                         summary="s", source_name="src",
+                         published="2026-05-07T00:00:00+00:00"),
+        bias_score=0.5, bias_label="center",
+        variant_left_title="", variant_left_summary="",
+        variant_right_title="", variant_right_summary="",
+    )
+    # 10-char SHA-256 prefix of the URL
+    assert len(a.permalink_slug) == 10
+    assert a.permalink_slug.isalnum()
+    # Stable: same URL always produces the same slug
+    assert a.permalink_slug == AnalyzedArticle(
+        original=Article(title="other", url="https://example.com/specific-story",
+                         summary="x", source_name="x",
+                         published="2026-05-07T00:00:00+00:00"),
+        bias_score=0.1, bias_label="left",
+        variant_left_title="", variant_left_summary="",
+        variant_right_title="", variant_right_summary="",
+    ).permalink_slug
+
+
 def test_extract_json_strips_fences():
     from zeitghost.bias import _extract_json
     raw = "```json\n{\"bias_score\": 0.5}\n```"

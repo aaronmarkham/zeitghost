@@ -1,5 +1,6 @@
 """Bias analysis and dual L/R variant generation using Claude."""
 
+import hashlib
 import json
 import logging
 from dataclasses import dataclass
@@ -33,6 +34,23 @@ class AnalyzedArticle:
     variant_right_title: str   # right-leaning rewrite of title
     variant_right_summary: str
     analysis_notes: str = ""
+
+    @property
+    def permalink_slug(self) -> str:
+        """Stable slug used for the per-article page filename.
+
+        Imported HtmxNewsEngine articles use their original integer id so old
+        share URLs (/article/46274) keep working. New articles get a short
+        SHA-256 prefix of their source URL.
+        """
+        if self.original.legacy_id is not None:
+            return str(self.original.legacy_id)
+        return hashlib.sha256(self.original.url.encode()).hexdigest()[:10]
+
+    @property
+    def permalink(self) -> str:
+        """Relative URL of the article's permalink page (used in templates)."""
+        return f"article/{self.permalink_slug}.html"
 
 
 ANALYSIS_PROMPT = """\

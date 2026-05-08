@@ -1,4 +1,8 @@
 {% extends "base.html" %}
+{% block title %}{{ article.original.title[:80] }} &mdash; {{ site_name }}{% endblock %}
+{% block scripts %}
+<script src="../static/js/slider.js"></script>
+{% endblock %}
 {% block content %}
 <section class="slider-bar" aria-label="Bias preference slider">
     <label for="bias-slider">
@@ -10,13 +14,6 @@
 </section>
 
 <section class="articles">
-    {% if not articles %}
-    <article class="card empty-state">
-        <h2>No articles ingested yet</h2>
-        <p>The first ingest cycle is running — Claude is analyzing the latest NewsAPI batch and writing shards. Articles typically appear within a few minutes of the first deploy. Refresh in a bit.</p>
-    </article>
-    {% endif %}
-    {% for article in articles %}
     <article class="card" data-bias="{{ '%.2f' | format(article.bias_score) }}" data-bias-label="{{ article.bias_label }}">
         <p class="meta">
             <span class="source">{{ article.original.source_name }}</span>
@@ -38,15 +35,10 @@
         </div>
 
         <p class="source-link">
-            <a href="{{ article.permalink }}">Permalink</a>
-            &middot;
             <a href="{{ article.original.url }}" rel="noopener" target="_blank">Read original at {{ article.original.source_name }}</a>
         </p>
     </article>
-    {% endfor %}
-</section>
-{% endblock %}
 
-{% block scripts %}
-<script src="static/js/slider.js"></script>
+    <p class="article-back"><a href="../index.html">&larr; Back to all news</a></p>
+</section>
 {% endblock %}

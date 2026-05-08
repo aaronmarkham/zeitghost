@@ -24,6 +24,8 @@ def _serialize_for_json(articles: list[AnalyzedArticle]) -> list[dict]:
             "title": a.original.title,
             "summary": a.original.summary,
             "url": a.original.url,
+            "permalink": a.permalink,
+            "legacy_id": a.original.legacy_id,
             "source": a.original.source_name,
             "published": a.original.published,
             "categories": a.original.categories,
@@ -40,6 +42,35 @@ def _serialize_for_json(articles: list[AnalyzedArticle]) -> list[dict]:
         }
         for a in articles
     ]
+
+
+def _render_article_pages(articles: list[AnalyzedArticle],
+                          env: Environment,
+                          output_dir: Path,
+                          base_ctx: dict) -> int:
+    """Emit output/article/<slug>.html for every article. Returns the count."""
+    article_dir = output_dir / "article"
+    article_dir.mkdir(parents=True, exist_ok=True)
+    # Wipe stale files so deleted articles don't linger as 200s
+    for stale in article_dir.glob("*.html"):
+        stale.unlink()
+
+    tmpl = env.get_template("article.html")
+    written = 0
+    seen_slugs: set[str] = set()
+    for a in articles:
+        slug = a.permalink_slug
+        if slug in seen_slugs:
+            log.warning("Duplicate permalink slug %r — skipping second occurrence "
+                        "(url=%s)", slug, a.original.url)
+            continue
+        seen_slugs.add(slug)
+        (article_dir / f"{slug}.html").write_text(
+            tmpl.render(article=a, **base_ctx),
+            encoding="utf-8",
+        )
+        written += 1
+    return written
 
 
 def generate_site(articles: list[AnalyzedArticle],
@@ -84,6 +115,10 @@ def generate_site(articles: list[AnalyzedArticle],
     )
     log.info("Generated index.html with %d visible articles (of %d total)",
              len(visible), len(articles))
+
+    # --- per-article permalink pages ---------------------------------------
+    n_articles = _render_article_pages(articles, env, output_dir, base_ctx)
+    log.info("Generated %d /article/<slug>.html permalink pages", n_articles)
 
     # --- analytics.html — overall + distribution + leaning + categories ---
     analytics_tmpl = env.get_template("analytics.html")

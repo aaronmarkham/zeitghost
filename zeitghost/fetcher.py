@@ -34,6 +34,11 @@ class Article:
     region: str = "national"
     categories: list[str] = field(default_factory=list)
     author: str = ""
+    # Original integer id from HtmxNewsEngine's news_article table — preserved
+    # only for imported articles so legacy share URLs (/article/46274) still
+    # resolve. New articles fetched via NewsAPI leave this None and get a
+    # hash-based permalink instead (see AnalyzedArticle.permalink_slug).
+    legacy_id: int | None = None
 
 
 def load_feed_config(config_path: Path) -> dict:

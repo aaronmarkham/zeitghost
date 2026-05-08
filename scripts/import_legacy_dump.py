@@ -89,6 +89,13 @@ def _row_to_components(row: dict) -> tuple[Article, float, str | None] | None:
     except (ValueError, TypeError):
         return None
 
+    # Preserve the legacy integer id so /article/<id> share URLs keep working.
+    legacy_id = row.get("id")
+    try:
+        legacy_id = int(legacy_id) if legacy_id is not None else None
+    except (ValueError, TypeError):
+        legacy_id = None
+
     article = Article(
         title=title,
         url=url,
@@ -97,6 +104,7 @@ def _row_to_components(row: dict) -> tuple[Article, float, str | None] | None:
         published=_to_iso(row.get("published_at") or row.get("created_at")),
         region="national",
         categories=[row.get("category")] if row.get("category") else [],
+        legacy_id=legacy_id,
     )
     return article, bias, (row.get("variant_type") or None)
 

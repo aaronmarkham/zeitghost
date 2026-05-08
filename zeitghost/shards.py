@@ -105,6 +105,13 @@ def article_to_internal_shard(article: AnalyzedArticle, store: ShardStore) -> st
             kind=AtomKind.CONTEXT, entity=entity,
             key="analysis_notes", value=article.analysis_notes,
         ))
+    # Preserve HtmxNewsEngine row id for old share-link URL parity.
+    if article.original.legacy_id is not None:
+        atoms.append(ShardAtom(
+            text=f"Legacy id: {article.original.legacy_id}",
+            kind=AtomKind.FACT, entity=entity,
+            key="legacy_id", value=str(article.original.legacy_id),
+        ))
 
     shard = MemoryShard(
         atoms=atoms,
@@ -155,6 +162,11 @@ def article_to_sw_shard(article: AnalyzedArticle, store: ShardStore) -> str:
             text=f"Categories: {','.join(article.original.categories)}",
             kind=AtomKind.FACT, entity=entity,
             key="categories", value=json.dumps(article.original.categories)))
+    if article.original.legacy_id is not None:
+        atoms.append(ShardAtom(
+            text=f"Legacy id: {article.original.legacy_id}",
+            kind=AtomKind.FACT, entity=entity,
+            key="legacy_id", value=str(article.original.legacy_id)))
 
     shard = MemoryShard(
         atoms=atoms,
@@ -180,6 +192,12 @@ def _shard_to_article(shard: MemoryShard) -> AnalyzedArticle | None:
         ]
     except json.JSONDecodeError:
         categories = []
+    legacy_raw = vals.get("legacy_id")
+    try:
+        legacy_id = int(legacy_raw) if legacy_raw else None
+    except (ValueError, TypeError):
+        legacy_id = None
+
     original = Article(
         title=vals.get("source_title", ""),
         url=url,
@@ -188,6 +206,7 @@ def _shard_to_article(shard: MemoryShard) -> AnalyzedArticle | None:
         published=vals.get("published", ""),
         region="national",
         categories=categories,
+        legacy_id=legacy_id,
     )
     try:
         return AnalyzedArticle(
