@@ -114,7 +114,9 @@ def test_analytics_top_leaning_filters_min_articles():
     assert right_names[0] == "righty"
 
 
-def test_analytics_category_stats_sorted_left_to_right():
+def test_analytics_category_stats_sorted_alphabetically():
+    """Categories sort alphabetically (changed from left-to-right per
+    user feedback — fixed list is easier to scan when ordered by name)."""
     from zeitghost.analytics import compute_category_stats
 
     articles = [_mk("a", 0.2, ["progressive"]),
@@ -122,10 +124,12 @@ def test_analytics_category_stats_sorted_left_to_right():
                 _mk("c", 0.5, ["mixed"]),
                 _mk("d", 0.85, ["conservative"])]
     cats = compute_category_stats(articles)
-    assert [c.category for c in cats] == ["progressive", "mixed", "conservative"]
-    assert cats[0].lean == "left"
-    assert cats[1].lean == "center"
-    assert cats[2].lean == "right"
+    assert [c.category for c in cats] == ["conservative", "mixed", "progressive"]
+    # Lean labels still reflect bias (independent of sort order)
+    by_name = {c.category: c for c in cats}
+    assert by_name["progressive"].lean == "left"
+    assert by_name["mixed"].lean == "center"
+    assert by_name["conservative"].lean == "right"
 
 
 def test_legacy_dump_helpers_smoke():
