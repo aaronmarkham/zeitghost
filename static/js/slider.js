@@ -38,6 +38,13 @@
         original: "Original framing",
     };
 
+    // Nominal positions on the 0..1 bias scale that the L/R variants are
+    // *written to inhabit*. The variants don't carry their own measured
+    // bias score (they're rewrites, not separately analyzed), so we anchor
+    // them at conventional positions for the "Current" marker.
+    const VARIANT_POSITION = { left: 0.20, right: 0.80 }; // original = source bias
+    const VARIANT_SHORT = { left: "left", right: "right", original: "original" };
+
     function statusText(name, visible, total) {
         const subject = VARIANT_NAME[name].toLowerCase();
         if (visible === total) return `Showing ${subject} for all ${total} articles`;
@@ -62,11 +69,28 @@
             const target_el = card.querySelector(".variant-" + variant);
             if (target_el) target_el.hidden = false;
 
-            // Update the per-card "Showing: ..." label so it's unambiguous
-            // which version of the article is currently rendered (separate
-            // from the article's own measured Source bias).
-            const showingEl = card.querySelector(".showing-variant");
-            if (showingEl) showingEl.textContent = VARIANT_NAME[variant];
+            // Update the dual-marker bias chart: leave the Source marker put,
+            // move the Current marker to the variant's nominal position, and
+            // refresh the legend text so the page reads:
+            //   Original ●: center-left · 0.40 | Current ▼: right · 0.80
+            const chart = card.querySelector(".bias-chart");
+            if (chart) {
+                const sourcePos = parseFloat(chart.dataset.sourcePos);
+                const currentPos =
+                    variant in VARIANT_POSITION
+                        ? VARIANT_POSITION[variant]
+                        : sourcePos;
+
+                const currentMarker = chart.querySelector(".bias-bar-marker-current");
+                if (currentMarker) {
+                    currentMarker.style.left = (currentPos * 100).toFixed(1) + "%";
+                }
+                const currentVal = chart.querySelector(".legend-current-value");
+                if (currentVal) {
+                    currentVal.textContent =
+                        VARIANT_SHORT[variant] + " · " + currentPos.toFixed(2);
+                }
+            }
         });
 
         if (status) status.textContent = statusText(variant, visible, cards.length);

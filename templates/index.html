@@ -25,17 +25,29 @@
             <span class="source">{{ article.original.source_name }}</span>
             <span class="date">{{ article.original.published[:10] }}</span>
         </p>
-        <p class="bias-line">
-            <span class="bias-line-label">Source bias:</span>
-            <span class="bias-bar" title="The article's source measured at {{ '%.2f' | format(article.bias_score) }} on a 0=left → 1=right scale">
-                <span class="bias-bar-marker" style="left: {{ '%.1f' | format(article.bias_score * 100) }}%;"></span>
+        <div class="bias-chart"
+             data-source-pos="{{ '%.3f' | format(article.bias_score) }}"
+             data-source-label="{{ article.bias_label }}">
+            <span class="bias-bar">
+                <span class="bias-bar-marker bias-bar-marker-source"
+                      style="left: {{ '%.1f' | format(article.bias_score * 100) }}%;"
+                      title="Source bias"></span>
+                <span class="bias-bar-marker bias-bar-marker-current"
+                      style="left: {{ '%.1f' | format(article.bias_score * 100) }}%;"
+                      title="Currently showing"></span>
             </span>
-            <span class="bias-badge bias-{{ article.bias_label }}">{{ article.bias_label }} &middot; {{ '%.2f' | format(article.bias_score) }}</span>
-        </p>
-        <p class="showing-line">
-            <span class="showing-label">Showing:</span>
-            <span class="showing-variant">Original framing</span>
-        </p>
+            <p class="bias-legend">
+                <span class="legend-item">
+                    <span class="legend-marker legend-marker-source"></span>
+                    Original: <span class="legend-source-value">{{ article.bias_label }} &middot; {{ '%.2f' | format(article.bias_score) }}</span>
+                </span>
+                <span class="legend-divider">|</span>
+                <span class="legend-item">
+                    <span class="legend-marker legend-marker-current"></span>
+                    Current: <span class="legend-current-value">original &middot; {{ '%.2f' | format(article.bias_score) }}</span>
+                </span>
+            </p>
+        </div>
 
         <div class="variant variant-left" hidden>
             <h2>{{ article.variant_left_title }}</h2>

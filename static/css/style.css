@@ -100,26 +100,47 @@ main { padding: 1.5rem 2rem; max-width: 900px; margin: 0 auto; }
     color: var(--muted);
 }
 
-/* "Source bias: [bar] [badge]" line */
-.bias-line {
-    margin: 0 0 .35rem;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: .6rem;
-    font-size: .85rem;
-}
-.bias-line-label { color: var(--muted); }
-
-/* "Showing: <variant name>" line — JS updates the variant name on slider input */
-.showing-line {
+/* Dual-marker bias chart — Source (●, below bar) + Current (▼, above bar)
+ * with a one-line legend below explaining each. JS moves the current marker
+ * + updates the legend text on slider input. */
+.bias-chart {
     margin: 0 0 .85rem;
+    padding-top: .6rem;     /* room for the Current ▼ above the bar */
+    padding-bottom: .55rem; /* room for the Source ● below the bar */
+}
+.bias-chart .bias-bar { display: block; width: 100%; max-width: 360px; }
+
+.bias-legend {
+    margin: .35rem 0 0;
     font-size: .8rem;
     color: var(--muted);
-    letter-spacing: .02em;
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+    align-items: center;
 }
-.showing-label { text-transform: uppercase; font-size: .7rem; letter-spacing: .08em; margin-right: .35rem; }
-.showing-variant { color: var(--fg); font-weight: 600; }
+.legend-item { display: inline-flex; align-items: center; gap: .35rem; }
+.legend-divider { color: var(--border); }
+.legend-source-value, .legend-current-value {
+    color: var(--fg);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+.legend-marker {
+    display: inline-block;
+    width: 10px; height: 10px;
+}
+.legend-marker-source {
+    border-radius: 50%;
+    background: rgb(var(--bias-r), var(--bias-g), var(--bias-b));
+    box-shadow: 0 0 0 1px var(--bg);
+}
+.legend-marker-current {
+    width: 0; height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 8px solid var(--fg);
+}
 .source { font-weight: 600; color: var(--fg); }
 .source-link a {
     color: var(--accent);
@@ -161,6 +182,30 @@ main { padding: 1.5rem 2rem; max-width: 900px; margin: 0 auto; }
     box-shadow: 0 0 0 1px var(--bg);
     transform: translateX(-50%);
     border-radius: 2px;
+}
+/* Source marker: colored dot BELOW the bar */
+.bias-bar-marker-source {
+    top: 100%;
+    margin-top: 2px;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: rgb(var(--bias-r), var(--bias-g), var(--bias-b));
+    box-shadow: 0 0 0 1px var(--bg);
+    transition: left .25s ease;
+}
+/* Current marker: triangle ABOVE the bar */
+.bias-bar-marker-current {
+    top: auto;
+    bottom: 100%;
+    margin-bottom: 2px;
+    width: 0; height: 0;
+    background: transparent;
+    box-shadow: none;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 8px solid var(--fg);
+    border-radius: 0;
+    transition: left .25s ease;
 }
 
 /* Variants */

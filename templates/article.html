@@ -10,13 +10,19 @@
             <span class="source">{{ article.original.source_name }}</span>
             <span class="date">{{ article.original.published[:10] }}</span>
         </p>
-        <p class="bias-line">
-            <span class="bias-line-label">Source bias:</span>
-            <span class="bias-bar bias-bar-lg" title="The article's source measured at {{ '%.2f' | format(article.bias_score) }} on a 0=left → 1=right scale">
-                <span class="bias-bar-marker" style="left: {{ '%.1f' | format(article.bias_score * 100) }}%;"></span>
+        <div class="bias-chart">
+            <span class="bias-bar bias-bar-lg">
+                <span class="bias-bar-marker bias-bar-marker-source"
+                      style="left: {{ '%.1f' | format(article.bias_score * 100) }}%;"
+                      title="Source bias"></span>
             </span>
-            <span class="bias-badge bias-{{ article.bias_label }}">{{ article.bias_label }} &middot; {{ '%.2f' | format(article.bias_score) }}</span>
-        </p>
+            <p class="bias-legend">
+                <span class="legend-item">
+                    <span class="legend-marker legend-marker-source"></span>
+                    Source: <span class="legend-source-value">{{ article.bias_label }} &middot; {{ '%.2f' | format(article.bias_score) }}</span>
+                </span>
+            </p>
+        </div>
 
         <section class="variant-block">
             <h3 class="variant-heading">Original framing</h3>
