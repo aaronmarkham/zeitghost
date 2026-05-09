@@ -1,5 +1,23 @@
 {% extends "base.html" %}
 {% block content %}
+<section class="range-toolbar" aria-label="Time range filter">
+    <span class="range-label">Time range</span>
+    <div class="range-buttons" role="group">
+        <button class="range-btn" data-days="7">1 wk</button>
+        <button class="range-btn" data-days="14">2 wk</button>
+        <button class="range-btn" data-days="30">1 mo</button>
+        <button class="range-btn" data-days="60">2 mo</button>
+        <button class="range-btn" data-days="180">6 mo</button>
+        <button class="range-btn active" data-days="0">All</button>
+    </div>
+</section>
+
+<section class="snapshot-stats" id="snapshot-stats" aria-live="polite">
+    <span class="stat-cell"><strong id="snap-count">{{ articles | length }}</strong> articles</span>
+    <span class="stat-cell" id="snap-range">&mdash;</span>
+    <span class="stat-cell">avg bias <strong id="snap-avg">&mdash;</strong> <span id="snap-avg-label" class="muted"></span></span>
+</section>
+
 <section class="slider-bar" aria-label="Bias preference slider">
     <label for="bias-slider">
         <span>Left</span>
@@ -20,6 +38,7 @@
     <article class="card"
              data-bias="{{ '%.2f' | format(article.bias_score) }}"
              data-bias-label="{{ article.bias_label }}"
+             data-published="{{ article.original.published[:10] }}"
              style="{{ article.bias_tint_inline }}">
         <p class="meta">
             <span class="source">{{ article.original.source_name }}</span>

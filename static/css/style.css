@@ -39,6 +39,62 @@ nav a:hover { text-decoration: underline; }
 
 main { padding: 1.5rem 2rem; max-width: 900px; margin: 0 auto; }
 
+/* Date-range toolbar — sits above the slider for coarse time filtering */
+.range-toolbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: .75rem;
+    padding: .75rem 0 .25rem;
+}
+.range-label {
+    font-size: .75rem;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--muted);
+}
+.range-buttons {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: .35rem;
+}
+.range-btn {
+    background: var(--card);
+    color: var(--fg);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: .3rem .8rem;
+    font-size: .85rem;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background .15s, border-color .15s, color .15s;
+}
+.range-btn:hover { border-color: var(--accent); color: var(--accent); }
+.range-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--bg);
+    font-weight: 600;
+}
+
+/* Snapshot stats — live counts/range/avg bias for the visible article set */
+.snapshot-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    align-items: baseline;
+    padding: .5rem 0 1rem;
+    color: var(--muted);
+    font-size: .9rem;
+    border-bottom: 1px solid var(--border);
+}
+.snapshot-stats .stat-cell strong {
+    color: var(--fg);
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+}
+.snapshot-stats .muted { color: var(--muted); margin-left: .25rem; }
+
 /* Slider */
 .slider-bar {
     position: sticky;

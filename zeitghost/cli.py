@@ -91,8 +91,9 @@ def ingest(feeds: str, limit: int, max_requests: int | None, dry_run: bool):
               help="Output directory for the rendered site")
 @click.option("--site-name", default="Zeitghost")
 @click.option("--site-tagline", default="Bias-aware news, your slider's choice")
-@click.option("--max-articles", type=int, default=100,
-              help="Limit articles rendered on index page")
+@click.option("--max-articles", type=int, default=500,
+              help="Limit articles rendered on index page (client-side filters "
+                   "narrow further by date range + bias slider)")
 def build(output: str, site_name: str, site_tagline: str, max_articles: int):
     """Render the static site from existing shards (no API calls).
 

@@ -79,7 +79,7 @@ def generate_site(articles: list[AnalyzedArticle],
                   static_dir: Path | None = None,
                   site_name: str = "Zeitghost",
                   site_tagline: str = "Bias-aware news, your slider's choice",
-                  max_articles: int = 100) -> Path:
+                  max_articles: int = 500) -> Path:
     """Render the index page with the bias slider and a per-source stats page."""
     output_dir.mkdir(parents=True, exist_ok=True)
 
