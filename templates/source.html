@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}{{ source_name }} bias &mdash; {{ site_name }}{% endblock %}
+{% block scripts %}
+<script src="/static/js/slider.js"></script>
+{% endblock %}
+{% block content %}
+<section class="source-header">
+    <p class="breadcrumb"><a href="/analytics.html">&larr; All sources</a></p>
+    <h2>{{ source_name }}</h2>
+    <p class="lead muted">
+        {{ total_count }} articles
+        {% if first_date and last_date %}
+        &middot; {{ first_date }} &rarr; {{ last_date }}
+        {% endif %}
+        &middot; lifetime avg bias
+        <strong>{{ overall_avg }}</strong>
+        <span class="bias-badge bias-{{ overall_lean }}">{{ overall_lean }}</span>
+    </p>
+</section>
+
+{% if monthly | length > 1 %}
+<section class="bias-over-time">
+    <h3>Bias drift, month by month</h3>
+    <p class="muted">Has this source's average shifted over time? The marker on each row shows where that month's mean bias falls on the 0=left → 1=right scale.</p>
+    <table class="source-stats">
+        <thead>
+            <tr><th>Month</th><th>Articles</th><th>Avg bias</th><th>Lean</th><th>Bias scale</th></tr>
+        </thead>
+        <tbody>
+        {% for m in monthly %}
+            <tr>
+                <td class="source-name">{{ m.label }}</td>
+                <td class="num">{{ m.count }}</td>
+                <td class="num">{{ '%.3f' | format(m.mean_bias) }}</td>
+                <td><span class="bias-badge bias-{{ m.lean }}">{{ m.lean }}</span></td>
+                <td>
+                    <div class="cat-scale">
+                        <div class="cat-scale-marker bias-{{ m.lean }}"
+                             style="left: {{ '%.1f' | format(m.mean_bias * 100) }}%;"
+                             title="Mean bias {{ '%.3f' | format(m.mean_bias) }}"></div>
+                    </div>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</section>
+{% endif %}
+
+<section class="range-toolbar" aria-label="Time range filter">
+    <span class="range-label">Time range</span>
+    <div class="range-buttons" role="group">
+        <button class="range-btn" data-days="7">1 wk</button>
+        <button class="range-btn" data-days="14">2 wk</button>
+        <button class="range-btn" data-days="30">1 mo</button>
+        <button class="range-btn" data-days="60">2 mo</button>
+        <button class="range-btn" data-days="180">6 mo</button>
+        <button class="range-btn active" data-days="0">All</button>
+    </div>
+</section>
+
+<section class="snapshot-stats" id="snapshot-stats" aria-live="polite">
+    <span class="stat-cell"><strong id="snap-count">{{ articles | length }}</strong> articles</span>
+    <span class="stat-cell" id="snap-range">&mdash;</span>
+    <span class="stat-cell">avg bias <strong id="snap-avg">&mdash;</strong> <span id="snap-avg-label" class="muted"></span></span>
+</section>
+
+<section class="slider-bar" aria-label="Bias preference slider">
+    <label for="bias-slider">
+        <span>Left</span>
+        <input id="bias-slider" type="range" min="0" max="100" value="50" step="1">
+        <span>Right</span>
+    </label>
+    <p class="slider-status" id="slider-status">Showing original framing</p>
+</section>
+
+<section class="articles">
+    {% for article in articles %}
+        {% include "_card.html" %}
+    {% endfor %}
+</section>
+{% endblock %}

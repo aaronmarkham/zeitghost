@@ -3,8 +3,10 @@ rollups computed from zeitghost:article shards.
 """
 
 import logging
+import re
 import statistics
 from dataclasses import dataclass, field
+from datetime import date
 
 from zeitghost.bias import AnalyzedArticle
 
@@ -30,6 +32,13 @@ def _coarse_lean(score: float) -> str:
     if score < LEFT_THRESHOLD: return "left"
     if score > RIGHT_THRESHOLD: return "right"
     return "center"
+
+
+def source_slug(source_name: str) -> str:
+    """URL-safe slug for a source name. Used to build /source/<slug>.html
+    page paths and link to them from the analytics table."""
+    s = re.sub(r"[^a-z0-9]+", "-", source_name.lower()).strip("-")
+    return s or "unknown"
 
 
 @dataclass
@@ -78,6 +87,56 @@ class SourceStats:
     @property
     def lean(self) -> str:
         return _coarse_lean(self.mean_bias)
+
+    @property
+    def slug(self) -> str:
+        return source_slug(self.source_name)
+
+
+@dataclass
+class MonthlyStats:
+    """Per-calendar-month bias rollup, used on per-source time-travel pages."""
+    label: str       # "Mar 2026"
+    year_month: str  # "2026-03"
+    count: int
+    mean_bias: float
+
+    @property
+    def lean(self) -> str:
+        return _coarse_lean(self.mean_bias)
+
+
+def compute_monthly_stats(articles: list[AnalyzedArticle]) -> list[MonthlyStats]:
+    """Group articles by their published year-month and roll up. Sorted
+    chronologically (oldest → newest) so a reader scans bias drift left to
+    right."""
+    by_month: dict[str, list[float]] = {}
+    for a in articles:
+        pub = a.original.published or ""
+        if len(pub) < 7:
+            continue
+        ym = pub[:7]  # YYYY-MM
+        # Defensive: skip malformed dates rather than crash the build
+        try:
+            int(ym[:4]); int(ym[5:7])
+        except ValueError:
+            continue
+        by_month.setdefault(ym, []).append(a.bias_score)
+
+    out = []
+    for ym in sorted(by_month):
+        scores = by_month[ym]
+        try:
+            d = date(int(ym[:4]), int(ym[5:7]), 1)
+            label = d.strftime("%b %Y")
+        except ValueError:
+            label = ym
+        out.append(MonthlyStats(
+            label=label, year_month=ym,
+            count=len(scores),
+            mean_bias=statistics.fmean(scores),
+        ))
+    return out
 
 
 def _bucket_for(score: float) -> str:

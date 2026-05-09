@@ -227,6 +227,49 @@ def test_analytics_top_leaning_filters_min_articles():
     assert right_names[0] == "righty"
 
 
+def test_source_slug_handles_punctuation_and_case():
+    from zeitghost.analytics import source_slug
+    assert source_slug("Fox News") == "fox-news"
+    assert source_slug("The New York Times") == "the-new-york-times"
+    assert source_slug("CNN.com") == "cnn-com"
+    assert source_slug("AP / Wire") == "ap-wire"
+    assert source_slug("---") == "unknown"  # falls back when stripped empty
+    assert source_slug("Source #1!") == "source-1"
+
+
+def test_monthly_stats_sorted_chronologically():
+    """Per-source monthly bias-drift table must read oldest → newest so a
+    reader scanning left-to-right sees the time progression naturally."""
+    from zeitghost.analytics import compute_monthly_stats
+
+    articles = [
+        _mk("Fox", 0.85), _mk("Fox", 0.75),  # default published = 2026-05-07 (May)
+    ]
+    # Retroactively age some articles into earlier months
+    articles[0].original.published = "2026-01-15T00:00:00+00:00"
+    articles[1].original.published = "2026-03-20T00:00:00+00:00"
+    articles.extend([_mk("Fox", 0.65)])  # May 2026 (default)
+
+    months = compute_monthly_stats(articles)
+    assert [m.year_month for m in months] == ["2026-01", "2026-03", "2026-05"]
+    assert [m.label for m in months] == ["Jan 2026", "Mar 2026", "May 2026"]
+    assert months[0].mean_bias == pytest.approx(0.85)
+    assert months[2].count == 1
+
+
+def test_monthly_stats_skips_malformed_dates():
+    from zeitghost.analytics import compute_monthly_stats
+
+    articles = [_mk("a", 0.5), _mk("b", 0.5), _mk("c", 0.5)]
+    articles[0].original.published = ""  # missing
+    articles[1].original.published = "not-a-date"
+    articles[2].original.published = "2026-04-10T00:00:00+00:00"
+
+    months = compute_monthly_stats(articles)
+    assert len(months) == 1
+    assert months[0].year_month == "2026-04"
+
+
 def test_analytics_category_stats_sorted_alphabetically():
     """Categories sort alphabetically (changed from left-to-right per
     user feedback — fixed list is easier to scan when ordered by name)."""

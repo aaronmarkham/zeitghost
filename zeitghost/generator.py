@@ -11,6 +11,7 @@ from jinja2 import Environment, FileSystemLoader
 from zeitghost.analytics import (
     SourceStats, compute_source_stats,
     compute_overall_stats, compute_bias_distribution, compute_category_stats,
+    compute_monthly_stats, source_slug,
     top_leaning_sources,
 )
 from zeitghost.bias import AnalyzedArticle
@@ -42,6 +43,83 @@ def _serialize_for_json(articles: list[AnalyzedArticle]) -> list[dict]:
         }
         for a in articles
     ]
+
+
+def _render_source_pages(articles: list[AnalyzedArticle],
+                         env: Environment,
+                         output_dir: Path,
+                         base_ctx: dict,
+                         min_articles: int = 5,
+                         max_articles_per_page: int = 500) -> int:
+    """Emit /source/<slug>.html for each source with >=min_articles.
+
+    Each page lists that source's articles (most recent first, capped) plus
+    a monthly bias-drift table so users can see whether the source's mean
+    bias has shifted over the timespan we have.
+    """
+    import statistics
+
+    source_dir = output_dir / "source"
+    source_dir.mkdir(parents=True, exist_ok=True)
+    for stale in source_dir.glob("*.html"):
+        stale.unlink()
+
+    by_source: dict[str, list[AnalyzedArticle]] = {}
+    for a in articles:
+        if a.original.source_name:
+            by_source.setdefault(a.original.source_name, []).append(a)
+
+    tmpl = env.get_template("source.html")
+    written = 0
+    seen_slugs: set[str] = set()
+
+    for source_name, source_articles in by_source.items():
+        if len(source_articles) < min_articles:
+            continue
+
+        slug = source_slug(source_name)
+        # Disambiguate slug collisions (e.g. two source names slugify to the
+        # same string) by suffixing -2, -3, ...
+        original_slug = slug
+        suffix = 2
+        while slug in seen_slugs:
+            slug = f"{original_slug}-{suffix}"
+            suffix += 1
+        seen_slugs.add(slug)
+
+        source_articles.sort(key=lambda a: a.original.published, reverse=True)
+        visible_articles = source_articles[:max_articles_per_page]
+
+        scores = [a.bias_score for a in source_articles]
+        avg = statistics.fmean(scores) if scores else 0.0
+        # Coarse 3-band lean for the headline badge
+        if avg < 0.48: overall_lean = "left"
+        elif avg > 0.52: overall_lean = "right"
+        else: overall_lean = "center"
+
+        first_date = min((a.original.published for a in source_articles
+                          if a.original.published), default="")[:10]
+        last_date = max((a.original.published for a in source_articles
+                         if a.original.published), default="")[:10]
+
+        ctx = {
+            **base_ctx,
+            "source_name": source_name,
+            "source_slug": slug,
+            "articles": visible_articles,
+            "total_count": len(source_articles),
+            "first_date": first_date,
+            "last_date": last_date,
+            "overall_avg": f"{avg:.2f}",
+            "overall_lean": overall_lean,
+            "monthly": compute_monthly_stats(source_articles),
+        }
+        (source_dir / f"{slug}.html").write_text(
+            tmpl.render(**ctx),
+            encoding="utf-8",
+        )
+        written += 1
+    return written
 
 
 def _render_article_pages(articles: list[AnalyzedArticle],
@@ -119,6 +197,11 @@ def generate_site(articles: list[AnalyzedArticle],
     # --- per-article permalink pages ---------------------------------------
     n_articles = _render_article_pages(articles, env, output_dir, base_ctx)
     log.info("Generated %d /article/<slug>.html permalink pages", n_articles)
+
+    # --- per-source pages with time-travel ---------------------------------
+    n_sources = _render_source_pages(articles, env, output_dir, base_ctx)
+    log.info("Generated %d /source/<slug>.html pages (sources with ≥5 articles)",
+             n_sources)
 
     # --- analytics.html — overall + distribution + leaning + categories ---
     analytics_tmpl = env.get_template("analytics.html")

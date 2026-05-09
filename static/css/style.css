@@ -293,6 +293,26 @@ main { padding: 1.5rem 2rem; max-width: 900px; margin: 0 auto; }
 .article-back a { color: var(--accent); text-decoration: none; }
 .article-back a:hover { text-decoration: underline; }
 
+/* Per-source page header — breadcrumb, big source name, lifetime stats */
+.source-header { margin-bottom: 1.5rem; }
+.source-header h2 { margin: .5rem 0; font-size: 1.6rem; }
+.source-header .lead { margin: 0; font-size: .95rem; }
+.breadcrumb { margin: 0 0 .5rem; font-size: .85rem; }
+.breadcrumb a { color: var(--accent); text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+
+/* Bias-over-time table on source pages */
+.bias-over-time { margin: 0 0 1.5rem; }
+.bias-over-time h3 { margin: .5rem 0; font-size: 1.05rem; }
+.bias-over-time .muted { margin: 0 0 .75rem; font-size: .85rem; }
+
+/* Make linked source names in analytics table look like links */
+.source-stats td.source-name a {
+    color: var(--accent);
+    text-decoration: none;
+}
+.source-stats td.source-name a:hover { text-decoration: underline; }
+
 /* Empty-state placeholder when ingest hasn't completed yet */
 .card.empty-state { text-align: center; padding: 2.5rem 1.25rem; color: var(--muted); }
 .card.empty-state h2 { color: var(--fg); }

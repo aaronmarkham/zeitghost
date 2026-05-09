@@ -1,0 +1,57 @@
+{# Reusable article card. Used by both the home feed (index.html) and the
+   per-source time-travel page (source.html) so any layout/data changes
+   propagate to both views. The slider/range JS targets `article.card`
+   regardless of which page rendered it. #}
+<article class="card"
+         data-bias="{{ '%.2f' | format(article.bias_score) }}"
+         data-bias-label="{{ article.bias_label }}"
+         data-published="{{ article.original.published[:10] }}"
+         data-source="{{ article.original.source_name }}"
+         style="{{ article.bias_tint_inline }}">
+    <p class="meta">
+        <span class="source">{{ article.original.source_name }}</span>
+        <span class="date">{{ article.original.published[:10] }}</span>
+    </p>
+    <div class="bias-chart"
+         data-source-pos="{{ '%.3f' | format(article.bias_score) }}"
+         data-source-label="{{ article.bias_label }}">
+        <span class="bias-bar">
+            <span class="bias-bar-marker bias-bar-marker-source"
+                  style="left: {{ '%.1f' | format(article.bias_score * 100) }}%;"
+                  title="Source bias"></span>
+            <span class="bias-bar-marker bias-bar-marker-current"
+                  style="left: {{ '%.1f' | format(article.bias_score * 100) }}%;"
+                  title="Currently showing"></span>
+        </span>
+        <p class="bias-legend">
+            <span class="legend-item">
+                <span class="legend-marker legend-marker-source"></span>
+                Original: <span class="legend-source-value">{{ article.bias_label }} &middot; {{ '%.2f' | format(article.bias_score) }}</span>
+            </span>
+            <span class="legend-divider">|</span>
+            <span class="legend-item">
+                <span class="legend-marker legend-marker-current"></span>
+                Current: <span class="legend-current-value">original &middot; {{ '%.2f' | format(article.bias_score) }}</span>
+            </span>
+        </p>
+    </div>
+
+    <div class="variant variant-left" hidden>
+        <h2>{{ article.variant_left_title }}</h2>
+        <p>{{ article.variant_left_summary }}</p>
+    </div>
+    <div class="variant variant-original">
+        <h2>{{ article.original.title }}</h2>
+        <p>{{ article.original.summary }}</p>
+    </div>
+    <div class="variant variant-right" hidden>
+        <h2>{{ article.variant_right_title }}</h2>
+        <p>{{ article.variant_right_summary }}</p>
+    </div>
+
+    <p class="source-link">
+        <a href="{{ article.permalink }}">Permalink</a>
+        &middot;
+        <a href="{{ article.original.url }}" rel="noopener" target="_blank">Read original at {{ article.original.source_name }}</a>
+    </p>
+</article>

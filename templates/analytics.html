@@ -159,7 +159,13 @@
         <tbody>
         {% for s in stats %}
             <tr>
-                <td class="source-name">{{ s.source_name }}</td>
+                <td class="source-name">
+                    {% if s.count >= 5 %}
+                        <a href="/source/{{ s.slug }}.html">{{ s.source_name }}</a>
+                    {% else %}
+                        {{ s.source_name }}
+                    {% endif %}
+                </td>
                 <td class="num">{{ s.count }}</td>
                 <td class="num">{{ '%.2f' | format(s.mean_bias) }}</td>
                 <td class="num">{{ '%.2f' | format(s.median_bias) }}</td>
