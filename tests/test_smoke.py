@@ -16,6 +16,33 @@ def test_article_dataclass():
                 source_name="src", published="2026-05-07T00:00:00+00:00")
     assert a.region == "national"
     assert a.categories == []
+    assert a.body == ""           # transient body field defaults to empty
+    assert a.legacy_id is None    # imported-only field
+
+
+def test_bias_prompt_uses_body_when_present():
+    """analyze_article should send the trafilatura-fetched body to Claude
+    when one is available, falling back to summary otherwise. We verify by
+    formatting the prompt template and checking which content reached it."""
+    from zeitghost.bias import ANALYSIS_PROMPT
+    from zeitghost.fetcher import Article
+
+    a = Article(title="T", url="https://x", summary="terse newsapi blurb",
+                source_name="s", published="2026-05-08T00:00:00+00:00",
+                body="Full article body fetched via trafilatura. Multiple paragraphs.")
+    # Replicate the same content selection used inside analyze_article
+    content = a.body if a.body else a.summary
+    rendered = ANALYSIS_PROMPT.format(title=a.title, content=content,
+                                      source_name=a.source_name)
+    assert "Full article body fetched via trafilatura" in rendered
+    assert "terse newsapi blurb" not in rendered
+
+    # Fallback path: no body → summary used
+    a.body = ""
+    content = a.body if a.body else a.summary
+    rendered = ANALYSIS_PROMPT.format(title=a.title, content=content,
+                                      source_name=a.source_name)
+    assert "terse newsapi blurb" in rendered
 
 
 def test_analyzed_article_dataclass():

@@ -39,6 +39,12 @@ class Article:
     # resolve. New articles fetched via NewsAPI leave this None and get a
     # hash-based permalink instead (see AnalyzedArticle.permalink_slug).
     legacy_id: int | None = None
+    # Full article body fetched via trafilatura — used as RICHER INPUT to
+    # Claude during bias analysis so rewrites are grounded in real text,
+    # not inferred from a 1-sentence NewsAPI description. Transient: not
+    # stored in shards, not displayed in the UI (copyright). Empty string
+    # when body fetch failed or wasn't attempted.
+    body: str = ""
 
 
 def load_feed_config(config_path: Path) -> dict:
@@ -172,6 +178,64 @@ def fetch_query(query: str, language: str = "en",
             out.append(a)
     log.info("  %d hits for %r", len(out), query)
     return out
+
+
+def fetch_article_body(url: str, timeout: int = 10) -> str | None:
+    """Fetch the article URL and extract clean body text via trafilatura.
+
+    Returns the extracted text (typically several paragraphs) or None when
+    the fetch fails (network error, paywall, bot block, no extractable
+    content, or trafilatura not installed).
+
+    Result is capped at 4000 chars to keep prompt sizes reasonable.
+    """
+    try:
+        import trafilatura
+    except ImportError:
+        log.debug("trafilatura not installed; skipping body fetch")
+        return None
+
+    try:
+        downloaded = trafilatura.fetch_url(url)
+        if not downloaded:
+            return None
+        text = trafilatura.extract(
+            downloaded,
+            include_comments=False,
+            include_tables=False,
+        )
+        if text and len(text) > 120:  # ignore very short extractions
+            return text[:4000]
+        return None
+    except Exception as e:
+        log.debug("Body fetch failed for %s: %s", url[:60], e)
+        return None
+
+
+def enrich_with_bodies(articles: list[Article], max_workers: int = 10) -> int:
+    """Fetch full body text for each article in parallel, mutating in place.
+
+    Articles whose body fetch fails or returns empty content keep their
+    NewsAPI summary as the input for Claude (handled in bias.analyze_article).
+    Returns the number of articles that successfully gained a body.
+    """
+    from concurrent.futures import ThreadPoolExecutor
+
+    if not articles:
+        return 0
+
+    log.info("Fetching full body for %d article(s)...", len(articles))
+    with ThreadPoolExecutor(max_workers=max_workers) as pool:
+        results = list(pool.map(lambda a: fetch_article_body(a.url), articles))
+
+    enriched = 0
+    for article, body in zip(articles, results):
+        if body:
+            article.body = body
+            enriched += 1
+    log.info("  body extracted for %d/%d (%.0f%%)", enriched, len(articles),
+             enriched / len(articles) * 100)
+    return enriched
 
 
 def fetch_all(config_path: Path, state_dir: Path,

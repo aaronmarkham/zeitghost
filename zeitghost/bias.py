@@ -12,6 +12,11 @@ log = logging.getLogger(__name__)
 # Lazy import — spiritwriter LLM provider
 _provider = None
 
+# Haiku is well-suited to this task: structured JSON output, mechanical
+# rewrite-with-X-framing pattern, no deep analysis required. ~5x cheaper
+# than Sonnet at acceptable quality for prompted opinion-page rewrites.
+DEFAULT_MODEL = "claude-haiku-4-5-20251001"
+
 
 def _get_provider():
     global _provider
@@ -90,8 +95,9 @@ opposite-leaning rewrites of it.
 
 Article:
 Title: {title}
-Summary: {summary}
 Source: {source_name}
+Content:
+{content}
 
 Respond with ONLY a JSON object (no markdown, no code fences):
 {{
@@ -99,19 +105,21 @@ Respond with ONLY a JSON object (no markdown, no code fences):
     "bias_label": "<left|center-left|center|center-right|right>",
     "variant_left": {{
         "title": "<rewritten title with progressive/left-leaning framing>",
-        "summary": "<2-3 sentence rewrite emphasizing systemic context, equity, marginalized perspectives>"
+        "summary": "<3-4 sentence rewrite emphasizing systemic context, equity, marginalized perspectives>"
     }},
     "variant_right": {{
         "title": "<rewritten title with conservative/right-leaning framing>",
-        "summary": "<2-3 sentence rewrite emphasizing personal responsibility, rule of law, traditional values>"
+        "summary": "<3-4 sentence rewrite emphasizing personal responsibility, rule of law, traditional values>"
     }},
     "analysis_notes": "<brief reasoning for the bias score and what each variant changed>"
 }}
 
 Guidelines:
-- Maintain factual accuracy in BOTH variants — do not fabricate events or statistics.
-- The variants should be plausible as real-world opinion-page rewrites of the same factual story, not propaganda.
-- Use active voice and natural news prose. Subtle framing wins; obvious framing reads as propaganda.
+- Use ONLY facts present in the Content above. Do not invent events,
+  statistics, quotes, or context that aren't in the source.
+- The variants should be plausible as real-world opinion-page rewrites of
+  the same factual story, not propaganda. Subtle framing wins.
+- Use active voice and natural news prose.
 - bias_score reflects the ORIGINAL article's lean, not the variants'.
 """
 
@@ -148,14 +156,17 @@ def _extract_json(text: str) -> dict | None:
 async def analyze_article(article: Article) -> AnalyzedArticle | None:
     """Analyze one article — compute bias and generate both variants."""
     provider = _get_provider()
+    # Prefer the trafilatura-extracted body when present (richer context for
+    # Claude); fall back to NewsAPI's terse description if body fetch failed.
+    content = article.body if article.body else article.summary
     prompt = ANALYSIS_PROMPT.format(
         title=article.title,
-        summary=article.summary,
+        content=content,
         source_name=article.source_name,
     )
 
     try:
-        response = await provider.query(prompt)
+        response = await provider.query(prompt, model=DEFAULT_MODEL)
         data = _extract_json(response)
         if data is None:
             log.warning("No valid JSON in response for '%s'", article.title[:50])

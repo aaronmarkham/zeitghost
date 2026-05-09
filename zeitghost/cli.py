@@ -38,7 +38,7 @@ def main(verbose: bool):
               help="Fetch + analyze but skip writing shards")
 def ingest(feeds: str, limit: int, max_requests: int | None, dry_run: bool):
     """Fetch new articles from NewsAPI, analyze with Claude, write shards."""
-    from zeitghost.fetcher import fetch_all
+    from zeitghost.fetcher import fetch_all, enrich_with_bodies
     from zeitghost.bias import analyze_batch
     from zeitghost.shards import (init_store, known_url_entities, is_known,
                                   article_to_internal_shard, article_to_sw_shard)
@@ -61,6 +61,12 @@ def ingest(feeds: str, limit: int, max_requests: int | None, dry_run: bool):
     if not new:
         console.print("  Nothing new to analyze")
         return
+
+    # Pull the actual article body via trafilatura so Claude has real source
+    # text to work from instead of NewsAPI's 1-sentence description. Body is
+    # used for analysis only — not stored in shards, not displayed in the UI.
+    console.print(f"[bold]Fetching full bodies for {len(new)} articles...[/bold]")
+    enrich_with_bodies(new)
 
     console.print(f"[bold]Analyzing {len(new)} new articles with Claude...[/bold]")
     analyzed = asyncio.run(analyze_batch(new))
