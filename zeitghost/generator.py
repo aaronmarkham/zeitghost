@@ -205,6 +205,16 @@ def generate_site(articles: list[AnalyzedArticle],
     log.info("Generated %d /source/<slug>.html pages (sources with ≥5 articles)",
              n_sources)
 
+    # --- coming-soon landing for spiritwriter.ai + www.spiritwriter.ai -----
+    # nginx serves this at the root for those hostnames (separate server
+    # block); news.spiritwriter.ai keeps the regular index.html.
+    coming_soon_tmpl = env.get_template("coming_soon.html")
+    (output_dir / "coming-soon.html").write_text(
+        coming_soon_tmpl.render(),
+        encoding="utf-8",
+    )
+    log.info("Generated coming-soon.html")
+
     # --- analytics.html — overall + distribution + leaning + categories ---
     analytics_tmpl = env.get_template("analytics.html")
     (output_dir / "analytics.html").write_text(
