@@ -53,21 +53,35 @@ class AnalyzedArticle:
         return f"article/{self.permalink_slug}.html"
 
     @property
-    def bias_tint(self) -> str:
-        """CSS color interpolating between blue (bias=0, far left) and
-        red (bias=1, far right). Used as a per-card accent in the templates
-        so the visual intensity tracks how far from center an article is.
+    def _bias_rgb(self) -> tuple[int, int, int]:
+        """Interpolated RGB tuple for this article's bias score.
 
-        At bias=0.5 the color is muted purple-gray (the midpoint of the two
-        endpoints) — communicating "neutral" without being invisible.
+        Endpoints match the CSS palette so inline styles and stylesheet
+        bias-* class colors line up:
+        - --left  #4f8cc9 (RGB 79, 140, 201)
+        - --right #d96458 (RGB 217, 100, 88)
         """
-        # Endpoints chosen to roughly match the existing CSS palette:
-        # --left  #4f8cc9 (RGB 79, 140, 201)
-        # --right #d96458 (RGB 217, 100, 88)
         r = round(79 + (217 - 79) * self.bias_score)
         g = round(140 + (100 - 140) * self.bias_score)
         b = round(201 + (88 - 201) * self.bias_score)
+        return (r, g, b)
+
+    @property
+    def bias_tint(self) -> str:
+        """CSS rgb() string for the article's bias color."""
+        r, g, b = self._bias_rgb
         return f"rgb({r}, {g}, {b})"
+
+    @property
+    def bias_tint_inline(self) -> str:
+        """Inline style fragment exposing --bias-r/g/b CSS custom properties.
+
+        The stylesheet uses these in `rgb()` and `rgba()` to derive the card's
+        left border, background tint, and bias-bar marker — keeping the color
+        math in Python so templates stay declarative.
+        """
+        r, g, b = self._bias_rgb
+        return f"--bias-r: {r}; --bias-g: {g}; --bias-b: {b};"
 
 
 ANALYSIS_PROMPT = """\

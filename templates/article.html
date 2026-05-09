@@ -5,11 +5,14 @@
     <article class="card article-detail"
              data-bias="{{ '%.2f' | format(article.bias_score) }}"
              data-bias-label="{{ article.bias_label }}"
-             style="border-left-color: {{ article.bias_tint }};">
+             style="{{ article.bias_tint_inline }}">
         <p class="meta">
             <span class="source">{{ article.original.source_name }}</span>
             <span class="bias-badge bias-{{ article.bias_label }}">{{ article.bias_label }} &middot; {{ '%.2f' | format(article.bias_score) }}</span>
             <span class="date">{{ article.original.published[:10] }}</span>
+            <span class="bias-bar bias-bar-lg" title="Bias score {{ '%.2f' | format(article.bias_score) }} on a 0=left → 1=right scale">
+                <span class="bias-bar-marker" style="left: {{ '%.1f' | format(article.bias_score * 100) }}%;"></span>
+            </span>
         </p>
 
         <section class="variant-block">
@@ -35,6 +38,6 @@
         </p>
     </article>
 
-    <p class="article-back"><a href="../index.html">&larr; Back to all news</a></p>
+    <p class="article-back"><a href="/">&larr; Back to all news</a></p>
 </section>
 {% endblock %}

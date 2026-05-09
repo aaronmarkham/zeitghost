@@ -67,15 +67,26 @@ main { padding: 1.5rem 2rem; max-width: 900px; margin: 0 auto; }
 .slider-bar span:last-of-type { color: var(--right); }
 .slider-status { color: var(--muted); font-size: .85rem; margin: .5rem 0 0; text-align: center; }
 
-/* Article cards */
+/* Article cards
+ * The card carries inline CSS custom properties (--bias-r/g/b) per article
+ * — see AnalyzedArticle.bias_tint_inline. Border + background tint derive
+ * from those variables so visual weight tracks the bias score. */
 .articles { display: flex; flex-direction: column; gap: 1.25rem; }
 .card {
-    background: var(--card);
+    /* Defaults if --bias-r/g/b aren't set (article page placeholder etc.) */
+    --bias-r: 140; --bias-g: 140; --bias-b: 140;
+
+    background:
+        /* Tint slab on the left side that fades to transparent ~60% across */
+        linear-gradient(
+            to right,
+            rgba(var(--bias-r), var(--bias-g), var(--bias-b), 0.18),
+            rgba(var(--bias-r), var(--bias-g), var(--bias-b), 0.08) 40%,
+            transparent 60%
+        ),
+        var(--card);
     border: 1px solid var(--border);
-    /* The left border is the bias indicator — color set inline per article
-     * via `style="border-left-color: ..."`, intensity scales blue↔red
-     * with the bias score. */
-    border-left-width: 5px;
+    border-left: 8px solid rgb(var(--bias-r), var(--bias-g), var(--bias-b));
     border-radius: 8px;
     padding: 1.25rem;
 }
@@ -108,8 +119,32 @@ main { padding: 1.5rem 2rem; max-width: 900px; margin: 0 auto; }
 .bias-center-right { color: #e0a58e; }
 .bias-right, .bias-badge.bias-right { color: var(--right); border-color: var(--right); }
 
+/* Per-card bias bar — small inline gradient with a marker at the article's
+ * bias score. Sits in the .meta line so it reads alongside the source/date. */
+.bias-bar {
+    position: relative;
+    display: inline-block;
+    width: 120px;
+    height: 8px;
+    background: linear-gradient(to right, var(--left), #7c8a9c 50%, var(--right));
+    border-radius: 4px;
+    vertical-align: middle;
+}
+.bias-bar.bias-bar-lg { width: 220px; height: 10px; }
+.bias-bar-marker {
+    position: absolute;
+    top: -3px;
+    width: 4px;
+    height: calc(100% + 6px);
+    background: var(--fg);
+    box-shadow: 0 0 0 1px var(--bg);
+    transform: translateX(-50%);
+    border-radius: 2px;
+}
+
 /* Variants */
 .variant[hidden] { display: none; }
+.card.filter-hidden { display: none; }
 
 /* Per-article permalink page — show all 3 variants stacked */
 .article-detail .variant-block {

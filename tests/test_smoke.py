@@ -49,6 +49,25 @@ def test_permalink_uses_legacy_id_when_present():
     assert a.permalink == "article/46274.html"
 
 
+def test_bias_tint_inline_exposes_css_variables():
+    """Card inline style sets --bias-r/g/b CSS custom properties so the
+    stylesheet can derive border + background tint from a single source."""
+    from zeitghost.bias import AnalyzedArticle
+    from zeitghost.fetcher import Article
+
+    a = AnalyzedArticle(
+        original=Article(title="t", url="https://x", summary="s",
+                         source_name="s", published="2026-05-07T00:00:00+00:00"),
+        bias_score=0.0, bias_label="left",
+        variant_left_title="", variant_left_summary="",
+        variant_right_title="", variant_right_summary="",
+    )
+    inline = a.bias_tint_inline
+    assert "--bias-r: 79" in inline
+    assert "--bias-g: 140" in inline
+    assert "--bias-b: 201" in inline
+
+
 def test_bias_tint_interpolates_blue_to_red():
     """Card border color: bias=0 → blue, bias=1 → red, bias=0.5 → midpoint."""
     from zeitghost.bias import AnalyzedArticle
