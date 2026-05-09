@@ -21,7 +21,14 @@
 {% if monthly | length > 1 %}
 <section class="bias-over-time">
     <h3>Bias drift, month by month</h3>
-    <p class="muted">Has this source's average shifted over time? The marker on each row shows where that month's mean bias falls on the 0=left → 1=right scale.</p>
+    <p class="muted">Has this source's average shifted over time? The sparkline plots monthly mean bias (top = right-leaning, bottom = left-leaning, dashed line = center). Hover any dot for the exact value.</p>
+    <div class="sparkline-container">
+        {{ sparkline_svg | safe }}
+        <div class="sparkline-axis">
+            <span class="sparkline-axis-end bias-left">left</span>
+            <span class="sparkline-axis-end bias-right">right</span>
+        </div>
+    </div>
     <table class="source-stats">
         <thead>
             <tr><th>Month</th><th>Articles</th><th>Avg bias</th><th>Lean</th><th>Bias scale</th></tr>

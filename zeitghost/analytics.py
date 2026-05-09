@@ -106,6 +106,85 @@ class MonthlyStats:
         return _coarse_lean(self.mean_bias)
 
 
+def _sparkline_dot_color(score: float) -> str:
+    """RGB string interpolating the bias palette — same math as
+    AnalyzedArticle.bias_tint so per-month dots match per-card colors."""
+    r = round(79 + (217 - 79) * score)
+    g = round(140 + (100 - 140) * score)
+    b = round(201 + (88 - 201) * score)
+    return f"rgb({r},{g},{b})"
+
+
+def render_bias_sparkline(monthly: list["MonthlyStats"],
+                          width: int = 600, height: int = 60,
+                          padding: int = 6) -> str:
+    """Generate an inline SVG sparkline of monthly mean bias.
+
+    Y-axis: bias_score, with 1.0 (right) at the top and 0.0 (left) at the
+    bottom — so an upward line means the source drifted right over time.
+    A dashed reference line at 0.5 marks center. Dots at each month are
+    colored by their value (blue→red), with a hoverable <title> showing
+    the month and exact mean. Returns "" when there's nothing to plot.
+    """
+    n = len(monthly)
+    if n == 0:
+        return ""
+
+    plot_w = width - 2 * padding
+    plot_h = height - 2 * padding
+    center_y = padding + 0.5 * plot_h
+
+    def _y(bias: float) -> float:
+        return padding + (1.0 - bias) * plot_h
+
+    if n == 1:
+        x = width / 2
+        y = _y(monthly[0].mean_bias)
+        return (
+            f'<svg class="bias-sparkline" viewBox="0 0 {width} {height}" '
+            f'xmlns="http://www.w3.org/2000/svg" role="img" '
+            f'aria-label="Bias sparkline (single month)">'
+            f'<line x1="{padding}" y1="{center_y:.1f}" x2="{width - padding}" '
+            f'y2="{center_y:.1f}" stroke="#30363d" stroke-width="1" '
+            f'stroke-dasharray="3,3" />'
+            f'<circle cx="{x:.1f}" cy="{y:.1f}" r="4" '
+            f'fill="{_sparkline_dot_color(monthly[0].mean_bias)}" '
+            f'stroke="#0d1117" stroke-width="1.5">'
+            f'<title>{monthly[0].label}: {monthly[0].mean_bias:.2f}</title>'
+            f'</circle></svg>'
+        )
+
+    points = []
+    for i, m in enumerate(monthly):
+        x = padding + (i / (n - 1)) * plot_w
+        points.append((x, _y(m.mean_bias), m))
+
+    path_d = "M " + " L ".join(f"{x:.1f} {y:.1f}" for x, y, _ in points)
+
+    parts = [
+        f'<svg class="bias-sparkline" viewBox="0 0 {width} {height}" '
+        f'xmlns="http://www.w3.org/2000/svg" role="img" '
+        f'aria-label="Mean bias by month">',
+        # Center reference (0.5)
+        f'<line x1="{padding}" y1="{center_y:.1f}" x2="{width - padding}" '
+        f'y2="{center_y:.1f}" stroke="#30363d" stroke-width="1" '
+        f'stroke-dasharray="3,3" />',
+        # Trajectory
+        f'<path d="{path_d}" fill="none" stroke="#58a6ff" stroke-width="2" '
+        f'stroke-linejoin="round" stroke-linecap="round" />',
+    ]
+    for x, y, m in points:
+        parts.append(
+            f'<circle cx="{x:.1f}" cy="{y:.1f}" r="3.5" '
+            f'fill="{_sparkline_dot_color(m.mean_bias)}" '
+            f'stroke="#0d1117" stroke-width="1.5">'
+            f'<title>{m.label}: {m.mean_bias:.2f}</title>'
+            f'</circle>'
+        )
+    parts.append('</svg>')
+    return ''.join(parts)
+
+
 def compute_monthly_stats(articles: list[AnalyzedArticle]) -> list[MonthlyStats]:
     """Group articles by their published year-month and roll up. Sorted
     chronologically (oldest → newest) so a reader scans bias drift left to

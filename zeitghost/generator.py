@@ -11,7 +11,7 @@ from jinja2 import Environment, FileSystemLoader
 from zeitghost.analytics import (
     SourceStats, compute_source_stats,
     compute_overall_stats, compute_bias_distribution, compute_category_stats,
-    compute_monthly_stats, source_slug,
+    compute_monthly_stats, render_bias_sparkline, source_slug,
     top_leaning_sources,
 )
 from zeitghost.bias import AnalyzedArticle
@@ -102,6 +102,7 @@ def _render_source_pages(articles: list[AnalyzedArticle],
         last_date = max((a.original.published for a in source_articles
                          if a.original.published), default="")[:10]
 
+        monthly = compute_monthly_stats(source_articles)
         ctx = {
             **base_ctx,
             "source_name": source_name,
@@ -112,7 +113,8 @@ def _render_source_pages(articles: list[AnalyzedArticle],
             "last_date": last_date,
             "overall_avg": f"{avg:.2f}",
             "overall_lean": overall_lean,
-            "monthly": compute_monthly_stats(source_articles),
+            "monthly": monthly,
+            "sparkline_svg": render_bias_sparkline(monthly),
         }
         (source_dir / f"{slug}.html").write_text(
             tmpl.render(**ctx),

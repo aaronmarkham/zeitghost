@@ -270,6 +270,51 @@ def test_monthly_stats_skips_malformed_dates():
     assert months[0].year_month == "2026-04"
 
 
+def test_sparkline_handles_empty_input():
+    from zeitghost.analytics import render_bias_sparkline
+    assert render_bias_sparkline([]) == ""
+
+
+def test_sparkline_renders_basic_shape():
+    """Multi-month sparkline must include an SVG, the trajectory path, a
+    dashed center reference line, and one circle per data point with a
+    <title> for hover."""
+    from zeitghost.analytics import compute_monthly_stats, render_bias_sparkline
+
+    articles = [_mk("Fox", 0.85), _mk("Fox", 0.55), _mk("Fox", 0.65)]
+    articles[0].original.published = "2026-01-15T00:00:00+00:00"
+    articles[1].original.published = "2026-02-20T00:00:00+00:00"
+    articles[2].original.published = "2026-03-10T00:00:00+00:00"
+
+    svg = render_bias_sparkline(compute_monthly_stats(articles))
+    assert svg.startswith("<svg")
+    assert svg.endswith("</svg>")
+    # Trajectory path with three points
+    assert '<path d="M ' in svg
+    # Dashed reference line
+    assert 'stroke-dasharray="3,3"' in svg
+    # One <circle> per month, each with a hover <title>
+    assert svg.count("<circle") == 3
+    assert svg.count("<title>") == 3
+    # Hover text format: "Mar 2026: 0.65"
+    assert "Jan 2026: 0.85" in svg
+    assert "Feb 2026: 0.55" in svg
+    assert "Mar 2026: 0.65" in svg
+
+
+def test_sparkline_single_month_renders_just_a_dot():
+    """Edge case: source has exactly one month of data — render a single
+    centered dot rather than a degenerate zero-length line."""
+    from zeitghost.analytics import compute_monthly_stats, render_bias_sparkline
+
+    articles = [_mk("X", 0.4)]
+    articles[0].original.published = "2026-04-01T00:00:00+00:00"
+    svg = render_bias_sparkline(compute_monthly_stats(articles))
+    assert "<svg" in svg
+    assert svg.count("<circle") == 1
+    assert "<path" not in svg  # no trajectory path with a single point
+
+
 def test_analytics_category_stats_sorted_alphabetically():
     """Categories sort alphabetically (changed from left-to-right per
     user feedback — fixed list is easier to scan when ordered by name)."""
