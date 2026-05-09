@@ -32,12 +32,14 @@
         return { target, tolerance };
     }
 
+    const VARIANT_NAME = {
+        left: "Left-leaning rewrite",
+        right: "Right-leaning rewrite",
+        original: "Original framing",
+    };
+
     function statusText(name, visible, total) {
-        const subject = {
-            left: "left-leaning rewrites",
-            right: "right-leaning rewrites",
-            original: "original framing",
-        }[name];
+        const subject = VARIANT_NAME[name].toLowerCase();
         if (visible === total) return `Showing ${subject} for all ${total} articles`;
         return `Showing ${subject} for ${visible} of ${total} articles`;
     }
@@ -59,6 +61,12 @@
             card.querySelectorAll(".variant").forEach((el) => { el.hidden = true; });
             const target_el = card.querySelector(".variant-" + variant);
             if (target_el) target_el.hidden = false;
+
+            // Update the per-card "Showing: ..." label so it's unambiguous
+            // which version of the article is currently rendered (separate
+            // from the article's own measured Source bias).
+            const showingEl = card.querySelector(".showing-variant");
+            if (showingEl) showingEl.textContent = VARIANT_NAME[variant];
         });
 
         if (status) status.textContent = statusText(variant, visible, cards.length);

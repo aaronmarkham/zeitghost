@@ -23,11 +23,18 @@
              style="{{ article.bias_tint_inline }}">
         <p class="meta">
             <span class="source">{{ article.original.source_name }}</span>
-            <span class="bias-badge bias-{{ article.bias_label }}">{{ article.bias_label }} &middot; {{ '%.2f' | format(article.bias_score) }}</span>
             <span class="date">{{ article.original.published[:10] }}</span>
-            <span class="bias-bar" title="Bias score {{ '%.2f' | format(article.bias_score) }} on a 0=left → 1=right scale">
+        </p>
+        <p class="bias-line">
+            <span class="bias-line-label">Source bias:</span>
+            <span class="bias-bar" title="The article's source measured at {{ '%.2f' | format(article.bias_score) }} on a 0=left → 1=right scale">
                 <span class="bias-bar-marker" style="left: {{ '%.1f' | format(article.bias_score * 100) }}%;"></span>
             </span>
+            <span class="bias-badge bias-{{ article.bias_label }}">{{ article.bias_label }} &middot; {{ '%.2f' | format(article.bias_score) }}</span>
+        </p>
+        <p class="showing-line">
+            <span class="showing-label">Showing:</span>
+            <span class="showing-variant">Original framing</span>
         </p>
 
         <div class="variant variant-left" hidden>
