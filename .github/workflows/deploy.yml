@@ -130,7 +130,8 @@ jobs:
           ansible-playbook deploy.yml \
             -i "inventories/${TARGET}/hosts.yml" \
             -e "vault_anthropic_api_key=${VAULT_ANTHROPIC_API_KEY}" \
-            -e "vault_news_api_key=${VAULT_NEWS_API_KEY}"
+            -e "vault_news_api_key=${VAULT_NEWS_API_KEY}" \
+            -e "zeitghost_commit_sha=${{ github.sha }}"
 
       - name: Health check
         run: |

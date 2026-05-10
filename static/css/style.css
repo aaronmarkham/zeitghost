@@ -533,6 +533,16 @@ footer {
     font-size: .85rem;
     text-align: center;
 }
+footer .commit-link {
+    color: var(--muted);
+    text-decoration: none;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: .8rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: .05rem .35rem;
+}
+footer .commit-link:hover { color: var(--accent); border-color: var(--accent); }
 
 /* About page — long-form methodology / shard / lineage explainer.
  * Designed to be lift-able to other spiritwriter apps (frio, perseus, etc.)

@@ -28,7 +28,14 @@
         {% block content %}{% endblock %}
     </main>
     <footer>
-        <p>Updated {{ generated_at[:10] }} &mdash; {{ total_articles }} articles from {{ source_count }} sources</p>
+        <p>
+            Updated {{ generated_at[:10] }} &mdash; {{ total_articles }} articles from {{ source_count }} sources
+            {% if zeitghost_commit %}
+            &middot;
+            <a href="https://github.com/aaronmarkham/zeitghost/commit/{{ zeitghost_commit }}"
+               class="commit-link" rel="noopener" title="Deployed commit {{ zeitghost_commit }}">{{ zeitghost_commit[:7] }}</a>
+            {% endif %}
+        </p>
     </footer>
     {% block scripts %}{% endblock %}
 </body>

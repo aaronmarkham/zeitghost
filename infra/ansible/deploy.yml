@@ -87,7 +87,9 @@
 
     - name: Build Docker images
       ansible.builtin.command:
-        cmd: docker compose build
+        cmd: >
+          docker compose build
+          --build-arg COMMIT_SHA={{ zeitghost_commit_sha | default('unknown') }}
         chdir: "{{ zeitghost_dest }}/infra/docker"
       environment:
         PATH: "/usr/local/bin:{{ ansible_facts['env']['PATH'] }}"

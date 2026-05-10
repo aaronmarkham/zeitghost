@@ -2,6 +2,7 @@
 
 import json
 import logging
+import os
 import shutil
 from datetime import datetime, timezone
 from pathlib import Path
@@ -179,12 +180,20 @@ def generate_site(articles: list[AnalyzedArticle],
     right_sources = top_leaning_sources(stats, direction="right")
     now = datetime.now(timezone.utc).isoformat()
 
+    # Commit SHA baked into the image at build time by ansible's
+    # `docker compose build --build-arg COMMIT_SHA=...`. Falls back to ""
+    # for local dev / hand-built images so the footer just omits the link.
+    commit = os.environ.get("ZEITGHOST_COMMIT", "").strip()
+    if commit in ("", "unknown"):
+        commit = ""
+
     base_ctx = {
         "site_name": site_name,
         "site_tagline": site_tagline,
         "generated_at": now,
         "total_articles": len(articles),
         "source_count": len(stats),
+        "zeitghost_commit": commit,
     }
 
     # --- index.html with the bias slider ------------------------------------

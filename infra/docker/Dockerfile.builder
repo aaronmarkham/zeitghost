@@ -24,6 +24,12 @@ RUN pip install --no-cache-dir --prefix=/install wheels/*.whl && \
 # ---------------------------------------------------------------------------
 FROM python:3.12-slim
 
+# Git SHA of the source tree being built. Surfaced as ENV so generator
+# can render it in the site footer + so `docker exec ... env` answers
+# "what commit is actually deployed" without inference.
+ARG COMMIT_SHA=unknown
+ENV ZEITGHOST_COMMIT=$COMMIT_SHA
+
 RUN apt-get update && \
     apt-get install -y --no-install-recommends curl ca-certificates && \
     rm -rf /var/lib/apt/lists/*
