@@ -260,6 +260,35 @@ def test_article_tags_handles_missing_fields():
     assert _article_tags(a) == []
 
 
+def test_tags_from_shard_matches_article_tags():
+    """tags_from_shard (used by the migration script to read existing shards)
+    must produce the same result as _article_tags would for the same data —
+    otherwise the in-place migration creates inconsistent tagging."""
+    from spiritwriter.trace.shard import MemoryShard, ShardAtom, AtomKind, DecayClass
+    from zeitghost.shards import _article_tags, tags_from_shard
+
+    a = _mk("Fox News", 0.7, ["politics", "economy"])
+    a.original.published = "2026-05-09T14:30:00+00:00"
+
+    # Build a shard mimicking what article_to_internal_shard would have written
+    # (back when tags weren't being set)
+    entity = "article:somehash"
+    atoms = [
+        ShardAtom(text="x", kind=AtomKind.FACT, entity=entity,
+                  key="source_name", value="Fox News"),
+        ShardAtom(text="x", kind=AtomKind.FACT, entity=entity,
+                  key="categories", value='["politics", "economy"]'),
+        ShardAtom(text="x", kind=AtomKind.FACT, entity=entity,
+                  key="published", value="2026-05-09T14:30:00+00:00"),
+    ]
+    untagged = MemoryShard(
+        atoms=atoms, scope="zeitghost:article", origin="zeitghost",
+        decay_class=DecayClass.STABLE, meta={"entity_key": entity},
+    )
+
+    assert tags_from_shard(untagged) == _article_tags(a)
+
+
 def test_monthly_stats_sorted_chronologically():
     """Per-source monthly bias-drift table must read oldest → newest so a
     reader scanning left-to-right sees the time progression naturally."""

@@ -85,6 +85,36 @@ def build_lineage_index(store: ShardStore, scope: str) -> dict[str, str]:
     return {ent: sid for ent, (sid, _) in latest.items()}
 
 
+def tags_from_shard(shard: MemoryShard) -> list[str]:
+    """Re-compute tags from a raw shard's atoms (no AnalyzedArticle round-trip).
+
+    Used by the in-place augmentation migration which has to read existing
+    shards rather than freshly-analyzed Article objects. Produces the same
+    output `_article_tags(article)` would have for the same data.
+    """
+    from zeitghost.analytics import source_slug
+
+    vals = {a.key: a.value for a in shard.atoms if a.key}
+    tags: list[str] = []
+    src = vals.get("source_name", "")
+    if src:
+        tags.append(f"source:{source_slug(src)}")
+    cats_raw = vals.get("categories", "")
+    if cats_raw:
+        try:
+            cats = (json.loads(cats_raw) if cats_raw.startswith("[")
+                    else [c for c in cats_raw.split(",") if c])
+        except json.JSONDecodeError:
+            cats = []
+        for cat in cats[:5]:
+            if cat:
+                tags.append(f"category:{cat}")
+    pub = vals.get("published", "")
+    if len(pub) >= 7:
+        tags.append(f"month:{pub[:7]}")
+    return tags
+
+
 def _article_tags(article: AnalyzedArticle) -> list[str]:
     """Cross-cutting tags applied to every shard so the store can answer
     `by_scope` + filter queries without scanning every shard's atoms.

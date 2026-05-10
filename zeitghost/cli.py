@@ -193,6 +193,38 @@ def import_legacy(db_url: str, limit: int, dry_run: bool):
     )
 
 
+@main.command(name="migrate-tags")
+@click.option("--dry-run", is_flag=True,
+              help="Report what would be augmented without writing shards")
+def migrate_tags(dry_run: bool):
+    """One-time migration: backfill tags onto shards written before lineage+tags landed.
+
+    \b
+    For each existing shard without tags, writes a NEW child shard with
+    the same atoms + computed tags + parent_shard_id back to the
+    original. Old shards stay (immutable); new shards become the
+    "latest revision" for each entity. Idempotent — already-tagged
+    shards are skipped.
+
+    Workflow on us-ny1:
+
+    \b
+        docker exec zeitghost-builder zeitghost migrate-tags --dry-run
+        # if counts look right:
+        docker exec zeitghost-builder zeitghost migrate-tags
+        docker exec zeitghost-builder python -m zeitghost.cli build
+    """
+    from scripts.augment_shard_tags import run
+    results = run(dry_run=dry_run, console=console)
+    total = sum(r["augmented"] for r in results)
+    skipped = sum(r["skipped_already_tagged"] for r in results)
+    verb = "Would augment" if dry_run else "Augmented"
+    console.print(
+        f"\n[bold green]{verb} {total} shards[/bold green] across "
+        f"{len(results)} scopes ({skipped} already tagged, skipped)"
+    )
+
+
 @main.command()
 @click.option("--title", "-t", default="Senate passes bipartisan immigration bill")
 @click.option("--summary", "-s",
