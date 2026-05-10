@@ -58,8 +58,66 @@ def is_known(article_url: str, known: set[str]) -> bool:
     return _url_entity(article_url) in known
 
 
-def article_to_internal_shard(article: AnalyzedArticle, store: ShardStore) -> str:
-    """Write the zeitghost-internal shard with full L/R variant data."""
+def build_lineage_index(store: ShardStore, scope: str) -> dict[str, str]:
+    """Pre-compute {entity_key → most-recent shard_id} for `scope`.
+
+    Pass the result to `article_to_*_shard(lineage_index=...)` so re-writes
+    set `parent_shard_id` on the new MemoryShard, forming an immutable
+    revision chain instead of silently superseding history. Mirrors
+    perseus-news's `build_sw_lineage_index()`.
+
+    Computed once per batch to avoid an O(N²) scan of the store on each
+    write. For first-time writes (cold store), pass an empty dict.
+    """
+    latest: dict[str, tuple[str, str]] = {}  # entity → (shard_id, created_at)
+    for shard in store.by_scope(scope):
+        ent = shard.meta.get("entity_key", "")
+        if not ent:
+            for atom in shard.atoms:
+                if atom.key == "source_url" and atom.entity:
+                    ent = atom.entity
+                    break
+        if not ent:
+            continue
+        existing = latest.get(ent)
+        if existing is None or (shard.created_at or "") > (existing[1] or ""):
+            latest[ent] = (shard.shard_id, shard.created_at or "")
+    return {ent: sid for ent, (sid, _) in latest.items()}
+
+
+def _article_tags(article: AnalyzedArticle) -> list[str]:
+    """Cross-cutting tags applied to every shard so the store can answer
+    `by_scope` + filter queries without scanning every shard's atoms.
+
+    Conventions:
+      source:<slug>   — per-source rollup (matches /source/<slug>.html URLs)
+      category:<cat>  — per-category filter
+      month:YYYY-MM   — time-window filter for the time-travel features
+    """
+    # Local import to avoid the analytics → bias → shards cycle on cold paths
+    from zeitghost.analytics import source_slug
+
+    tags: list[str] = []
+    if article.original.source_name:
+        tags.append(f"source:{source_slug(article.original.source_name)}")
+    for cat in article.original.categories[:5]:
+        if cat:
+            tags.append(f"category:{cat}")
+    pub = article.original.published or ""
+    if len(pub) >= 7:
+        tags.append(f"month:{pub[:7]}")
+    return tags
+
+
+def article_to_internal_shard(article: AnalyzedArticle, store: ShardStore,
+                              lineage_index: dict[str, str] | None = None
+                              ) -> str:
+    """Write the zeitghost-internal shard with full L/R variant data.
+
+    Pass `lineage_index` (from `build_lineage_index(store, SCOPE_INTERNAL)`)
+    to chain re-writes via `parent_shard_id`. Without it, every write is
+    treated as a first revision.
+    """
     entity = _url_entity(article.original.url)
     atoms = [
         ShardAtom(text=f"Source: {article.original.url}",
@@ -113,20 +171,25 @@ def article_to_internal_shard(article: AnalyzedArticle, store: ShardStore) -> st
             key="legacy_id", value=str(article.original.legacy_id),
         ))
 
+    parent = (lineage_index or {}).get(entity)
     shard = MemoryShard(
         atoms=atoms,
         scope=SCOPE_INTERNAL,
         origin="zeitghost",
         decay_class=DecayClass.STABLE,
+        parent_shard_id=parent,
+        tags=_article_tags(article),
         meta={"entity_key": entity},
     )
     store.put(shard)
-    log.debug("Stored zeitghost shard %s for '%s'",
-             shard.shard_id[:12], article.original.title[:40])
+    log.debug("Stored zeitghost shard %s for '%s'%s",
+             shard.shard_id[:12], article.original.title[:40],
+             f" (revision of {parent[:12]})" if parent else "")
     return shard.shard_id
 
 
-def article_to_sw_shard(article: AnalyzedArticle, store: ShardStore) -> str:
+def article_to_sw_shard(article: AnalyzedArticle, store: ShardStore,
+                        lineage_index: dict[str, str] | None = None) -> str:
     """Write the consumer-agnostic sw:article shard.
 
     Atom keys (`title`, `summary`, etc.) match frio's `shard_from_article()`.
@@ -168,11 +231,14 @@ def article_to_sw_shard(article: AnalyzedArticle, store: ShardStore) -> str:
             kind=AtomKind.FACT, entity=entity,
             key="legacy_id", value=str(article.original.legacy_id)))
 
+    parent = (lineage_index or {}).get(entity)
     shard = MemoryShard(
         atoms=atoms,
         scope=SCOPE_SW_ARTICLE,
         origin="zeitghost",
         decay_class=DecayClass.STABLE,
+        parent_shard_id=parent,
+        tags=_article_tags(article),
         meta={"entity_key": entity},
     )
     store.put(shard)

@@ -215,6 +215,14 @@ def generate_site(articles: list[AnalyzedArticle],
     )
     log.info("Generated coming-soon.html")
 
+    # --- about page — methodology, shard format, lineage explainer ---------
+    about_tmpl = env.get_template("about.html")
+    (output_dir / "about.html").write_text(
+        about_tmpl.render(**base_ctx),
+        encoding="utf-8",
+    )
+    log.info("Generated about.html")
+
     # --- analytics.html — overall + distribution + leaning + categories ---
     analytics_tmpl = env.get_template("analytics.html")
     (output_dir / "analytics.html").write_text(

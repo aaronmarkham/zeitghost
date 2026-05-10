@@ -44,6 +44,7 @@ from zeitghost.fetcher import Article
 from zeitghost.shards import (
     init_store, known_url_entities, is_known,
     article_to_internal_shard, article_to_sw_shard,
+    build_lineage_index, SCOPE_INTERNAL, SCOPE_SW_ARTICLE,
 )
 
 log = logging.getLogger(__name__)
@@ -169,6 +170,10 @@ def import_from_db(db_url: str, *, limit: int = 0,
     # Process originals
     store = init_store() if not dry_run else None
     known = known_url_entities(store) if store else set()
+    # Pre-compute lineage indexes once so re-imports chain revisions via
+    # parent_shard_id instead of silently overwriting history.
+    internal_lineage = build_lineage_index(store, SCOPE_INTERNAL) if store else {}
+    sw_lineage = build_lineage_index(store, SCOPE_SW_ARTICLE) if store else {}
     written = 0
     skipped_partial = 0  # NULL bias — saved before analysis ran
     skipped_known = 0    # already in shard store
@@ -186,8 +191,8 @@ def import_from_db(db_url: str, *, limit: int = 0,
             continue
 
         if not dry_run:
-            article_to_internal_shard(analyzed, store)
-            article_to_sw_shard(analyzed, store)
+            article_to_internal_shard(analyzed, store, lineage_index=internal_lineage)
+            article_to_sw_shard(analyzed, store, lineage_index=sw_lineage)
 
         written += 1
         if console and written % 500 == 0:

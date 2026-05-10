@@ -237,6 +237,29 @@ def test_source_slug_handles_punctuation_and_case():
     assert source_slug("Source #1!") == "source-1"
 
 
+def test_article_tags_compose_source_category_month():
+    """Cross-cutting tags let the shard store filter by source/category/month
+    without scanning every shard's atoms."""
+    from zeitghost.shards import _article_tags
+
+    a = _mk("Fox News", 0.7, ["politics", "economy"])
+    a.original.published = "2026-05-09T14:30:00+00:00"
+    tags = _article_tags(a)
+    assert "source:fox-news" in tags
+    assert "category:politics" in tags
+    assert "category:economy" in tags
+    assert "month:2026-05" in tags
+
+
+def test_article_tags_handles_missing_fields():
+    from zeitghost.shards import _article_tags
+
+    a = _mk("", 0.5, [])
+    a.original.published = ""
+    # Empty source/published produces an empty tag list — never crashes
+    assert _article_tags(a) == []
+
+
 def test_monthly_stats_sorted_chronologically():
     """Per-source monthly bias-drift table must read oldest → newest so a
     reader scanning left-to-right sees the time progression naturally."""

@@ -534,6 +534,49 @@ footer {
     text-align: center;
 }
 
+/* About page — long-form methodology / shard / lineage explainer.
+ * Designed to be lift-able to other spiritwriter apps (frio, perseus, etc.)
+ * with minimal restyling. */
+.about { max-width: 760px; margin: 0 auto; }
+.about h2 { margin: 0 0 .25rem; }
+.about h3 { margin: 2.25rem 0 .75rem; font-size: 1.15rem; }
+.about p { margin: .65rem 0; line-height: 1.7; }
+.about ul, .about dl { margin: .65rem 0 .65rem 1.25rem; line-height: 1.7; }
+.about li { margin: .25rem 0; }
+.about code {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: .05rem .35rem;
+    font-size: .9em;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.about pre {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 6px;
+    padding: 1rem 1.25rem;
+    overflow-x: auto;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: .85rem;
+    line-height: 1.5;
+}
+.about pre code { background: transparent; border: 0; padding: 0; font-size: inherit; }
+.about a { color: var(--accent); }
+.about dl dt { font-weight: 600; margin-top: .75rem; color: var(--fg); }
+.about dl dd { margin: .25rem 0 0 1.5rem; color: var(--muted); }
+.about dl dd code { color: var(--fg); }
+.stat-list { list-style: none; margin-left: 0 !important; padding-left: 0; }
+.stat-list li {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: .65rem 1rem;
+    margin: .35rem 0;
+}
+.stat-list strong { color: var(--accent); font-variant-numeric: tabular-nums; }
+
 /* Standalone coming-soon landing page (served at spiritwriter.ai +
  * www.spiritwriter.ai while those domains migrate off the old site) */
 .coming-soon-body {

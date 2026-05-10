@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}About &mdash; {{ site_name }}{% endblock %}
+{% block content %}
+<section class="about">
+    <h2>How {{ site_name }} works</h2>
+    <p class="lead">Open methodology, content-addressed memory, all the way down.</p>
+
+    {# ─── Pipeline ─────────────────────────────────────────────────────── #}
+    <h3>The data pipeline</h3>
+    <p>Every hour, an ingest cycle pulls fresh news, analyzes it for political bias, generates left- and right-leaning rewrites of each story, and rebuilds this static site from the resulting memory store. Nothing in the pipeline is hidden — here's the whole flow:</p>
+    <pre class="pipeline">
+NewsAPI                top-headlines + free-text query endpoints
+   │                   (~50 articles per cycle, deduped against the shard store)
+   ↓
+trafilatura            fetches each article URL, extracts the cleaned body text
+   │                   (used as Claude's input — never republished here, copyright)
+   ↓
+Claude Haiku 4.5       bias score (0=far left, 1=far right) + dual rewrites
+   │                   (left-leaning + right-leaning framings of the same facts)
+   ↓
+spiritwriter shards    immutable, content-addressed records of the analysis
+   │                   - zeitghost:article scope: full data + variants
+   │                   - sw:article scope:        consumer-agnostic format
+   ↓
+Static site            re-rendered from the shard store each cycle
+                       - home feed + per-source pages + per-article permalinks
+                       - sparkline of bias drift over time
+                       - client-side bias slider + date-range filter</pre>
+
+    {# ─── What's a shard ──────────────────────────────────────────────── #}
+    <h3>What's a shard?</h3>
+    <p>A <a href="https://github.com/aaronmarkham/spiritwriter-core" rel="noopener">spiritwriter</a> <strong>memory shard</strong> is the fundamental unit of persisted analysis. Each shard is:</p>
+    <ul>
+        <li><strong>Content-addressed</strong> — its <code>shard_id</code> is the hash of its contents. Identical content → identical id.</li>
+        <li><strong>Immutable</strong> — once written, never modified. Updates create new shards.</li>
+        <li><strong>A bundle of atoms</strong> — small typed key-value records (<code>FACT</code>, <code>DECISION</code>, <code>CONTEXT</code>, ...) that describe one thing.</li>
+        <li><strong>Scoped</strong> — every shard belongs to exactly one scope (e.g. <code>sw:article</code>) so the store can answer "all article shards" in O(scope size) instead of O(everything).</li>
+        <li><strong>Tagged</strong> — for cross-cutting filters (<code>source:fox-news</code>, <code>category:politics</code>, <code>month:2026-05</code>).</li>
+        <li><strong>Decay-classed</strong> — each shard has a TTL (article shards are <code>STABLE</code> = 90 days unless re-anchored).</li>
+    </ul>
+
+    <p>Here's what a single article looks like in the <code>sw:article</code> scope (the consumer-agnostic shape that frio, this site, and any future spiritwriter app can read):</p>
+    <pre class="shard-example">MemoryShard(
+    scope="sw:article",
+    shard_id="9a3f...",                # content hash
+    parent_shard_id=null,              # set if this revises an earlier analysis
+    origin="zeitghost",
+    decay_class=STABLE,
+    tags=["source:fox-news", "category:politics", "month:2026-05"],
+    meta={"entity_key": "article:b2c1...sha256...0e4a"},
+    atoms=[
+        ShardAtom(kind=FACT,     key="source_url",  value="https://..."),
+        ShardAtom(kind=FACT,     key="title",       value="Senate passes bill..."),
+        ShardAtom(kind=FACT,     key="summary",     value="A bipartisan bill..."),
+        ShardAtom(kind=FACT,     key="source_name", value="Fox News"),
+        ShardAtom(kind=FACT,     key="published",   value="2026-05-09T14:30:00Z"),
+        ShardAtom(kind=DECISION, key="bias_score",  value="0.72"),
+        ShardAtom(kind=DECISION, key="bias_label",  value="center-right"),
+    ],
+)</pre>
+
+    {# ─── Two scopes ──────────────────────────────────────────────────── #}
+    <h3>Two scopes per article</h3>
+    <p>Each ingested article is written into <strong>two</strong> shards in different scopes:</p>
+    <dl class="scope-list">
+        <dt><code>zeitghost:article</code></dt>
+        <dd>Full internal data — original title/summary, both L/R variants, bias score and label, analysis notes, optional legacy id from the HtmxNewsEngine import. This is what powers the slider on the home page and the per-article permalink page.</dd>
+        <dt><code>sw:article</code></dt>
+        <dd>Consumer-agnostic format. Atom keys (<code>title</code>, <code>summary</code>, <code>bias_score</code>, ...) match the convention used by <a href="https://github.com/aaronmarkham/frio" rel="noopener">frio</a> and <a href="https://github.com/aaronmarkham/perseus-news" rel="noopener">perseus-news</a> so any spiritwriter-aware tool can read this site's data without knowing anything about zeitghost specifically. This is the layer that makes cross-app integration possible.</dd>
+    </dl>
+
+    {# ─── Lineage ─────────────────────────────────────────────────────── #}
+    <h3>Immutability and lineage</h3>
+    <p>Shards are immutable — they're never modified after being written. When an article gets <em>re-analyzed</em> (better model, refetched body, prompt iteration), we don't overwrite the old shard. We write a <strong>new</strong> shard with <code>parent_shard_id</code> pointing back to its predecessor. That gives every article a queryable history:</p>
+    <pre class="lineage-example">  shard_id  parent_shard_id  origin       bias_score  created_at
+  ────────  ───────────────  ───────────  ──────────  ────────────────────
+  shard-A   ∅                zeitghost    0.65        2026-04-30T10:00:00Z   ← v1: first analysis
+  shard-B   shard-A          zeitghost    0.71        2026-05-15T03:00:00Z   ← v2: re-analyzed with body
+  shard-C   shard-B          zeitghost    0.69        2026-06-02T09:30:00Z   ← v3: prompt update</pre>
+    <p>Reading the chain backward via <code>parent_shard_id</code> gives the full provenance — what we thought, when, and what changed. Reading forward shows the latest version. The old revisions don't disappear.</p>
+    <p>This matters for accountability. A bias-analysis site claiming "Source X is 0.72 right-leaning" should be auditable. With shard lineage you can ask: <em>when did we first say that, what model produced it, has the score drifted as we refined our methodology?</em></p>
+
+    {# ─── Powered by spiritwriter-core ────────────────────────────────── #}
+    <h3>Powered by spiritwriter-core</h3>
+    <p>The shard format, lineage, decay TTLs, and content-addressing all come from <a href="https://github.com/aaronmarkham/spiritwriter-core" rel="noopener"><strong>spiritwriter-core</strong></a> — an open-source library for building agents and applications around persistent, distributable memory.</p>
+    <p>Other apps in the spiritwriter family that use the same shard format:</p>
+    <ul>
+        <li><a href="https://github.com/aaronmarkham/frio" rel="noopener">frio</a> — county jail roster monitoring with zero-knowledge encrypted search</li>
+        <li><a href="https://github.com/aaronmarkham/perseus-news" rel="noopener">perseus-news</a> — regional enforcement news (<a href="https://www.texascrime.org">texascrime.org</a> runs on it)</li>
+        <li><a href="https://github.com/aaronmarkham/zeitghost" rel="noopener">zeitghost</a> — this site</li>
+    </ul>
+    <p>Because they all read and write the same <code>sw:article</code> shape, an article ingested here could be referenced by frio when its content is relevant to a facility, or by perseus when a story is regionally significant. That's the cross-app integration spiritwriter-core was designed to enable.</p>
+
+    {# ─── Shard store stats ───────────────────────────────────────────── #}
+    <h3>By the numbers</h3>
+    <p class="lead muted">As of {{ generated_at[:10] }}:</p>
+    <ul class="stat-list">
+        <li><strong>{{ total_articles }}</strong> articles in the shard store</li>
+        <li><strong>{{ source_count }}</strong> distinct news sources</li>
+        <li>2 shards per article (internal + consumer-agnostic) → {{ total_articles * 2 }} total shards</li>
+    </ul>
+</section>
+{% endblock %}

@@ -41,7 +41,9 @@ def ingest(feeds: str, limit: int, max_requests: int | None, dry_run: bool):
     from zeitghost.fetcher import fetch_all, enrich_with_bodies
     from zeitghost.bias import analyze_batch
     from zeitghost.shards import (init_store, known_url_entities, is_known,
-                                  article_to_internal_shard, article_to_sw_shard)
+                                  article_to_internal_shard, article_to_sw_shard,
+                                  build_lineage_index,
+                                  SCOPE_INTERNAL, SCOPE_SW_ARTICLE)
 
     store = init_store()
     state_dir = Path(store.path).parent if hasattr(store, "path") else Path.home() / ".zeitghost"
@@ -78,9 +80,13 @@ def ingest(feeds: str, limit: int, max_requests: int | None, dry_run: bool):
             console.print(f"  [{a.bias_label}] {a.original.title[:70]}")
         return
 
+    # Build lineage indexes once so re-analyses (rare with our skip-if-known
+    # default, but possible if dedup is bypassed later) chain via parent_shard_id.
+    internal_lineage = build_lineage_index(store, SCOPE_INTERNAL)
+    sw_lineage = build_lineage_index(store, SCOPE_SW_ARTICLE)
     for a in analyzed:
-        article_to_internal_shard(a, store)
-        article_to_sw_shard(a, store)
+        article_to_internal_shard(a, store, lineage_index=internal_lineage)
+        article_to_sw_shard(a, store, lineage_index=sw_lineage)
     console.print(f"  {len(analyzed) * 2} shards written "
                   f"(internal + sw:article)")
 
