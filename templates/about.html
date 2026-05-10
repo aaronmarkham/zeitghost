@@ -35,27 +35,42 @@ Static site            re-rendered from the shard store each cycle
         <li><strong>Immutable</strong> — once written, never modified. Updates create new shards.</li>
         <li><strong>A bundle of atoms</strong> — small typed key-value records (<code>FACT</code>, <code>DECISION</code>, <code>CONTEXT</code>, ...) that describe one thing.</li>
         <li><strong>Scoped</strong> — every shard belongs to exactly one scope (e.g. <code>sw:article</code>) so the store can answer "all article shards" in O(scope size) instead of O(everything).</li>
-        <li><strong>Tagged</strong> — for cross-cutting filters (<code>source:fox-news</code>, <code>category:politics</code>, <code>month:2026-05</code>).</li>
+        <li><strong>Tagged</strong> — for cross-cutting filters (<code>source:apnews</code>, <code>category:politics</code>, <code>month:2026-05</code>).</li>
         <li><strong>Decay-classed</strong> — each shard has a TTL (article shards are <code>STABLE</code> = 90 days unless re-anchored).</li>
     </ul>
 
-    <p>Here's what a single article looks like in the <code>sw:article</code> scope (the consumer-agnostic shape that frio, this site, and any future spiritwriter app can read):</p>
+    <p>Shards are general-purpose — anything atomic enough to live as a structured record fits the model. A few flavors to ground the idea:</p>
+
+    <p class="example-label"><strong>A research note</strong> about a paper:</p>
+    <pre class="shard-example">ShardAtom(kind=FACT,     key="paper_title",   value="Attention Is All You Need")
+ShardAtom(kind=CONTEXT,  key="key_finding",   value="Self-attention beats RNNs on translation")
+ShardAtom(kind=DECISION, key="cite_in_paper", value="true")</pre>
+
+    <p class="example-label"><strong>A personal preference</strong> an assistant should remember:</p>
+    <pre class="shard-example">ShardAtom(kind=DECISION, key="coffee_order",   value="americano, oat milk, no sugar")
+ShardAtom(kind=CONTEXT,  key="preferred_cafe", value="Blue Bottle, Mission")</pre>
+
+    <p class="example-label"><strong>An architectural decision</strong> in a software project:</p>
+    <pre class="shard-example">ShardAtom(kind=DECISION, key="db_choice", value="postgres")
+ShardAtom(kind=CONTEXT,  key="reason",    value="JSONB columns for typed sparse data")</pre>
+
+    <p>And here's how this site uses them — a single article in the <code>sw:article</code> scope:</p>
     <pre class="shard-example">MemoryShard(
     scope="sw:article",
     shard_id="9a3f...",                # content hash
     parent_shard_id=null,              # set if this revises an earlier analysis
     origin="zeitghost",
     decay_class=STABLE,
-    tags=["source:fox-news", "category:politics", "month:2026-05"],
+    tags=["source:apnews", "category:politics", "month:2026-05"],
     meta={"entity_key": "article:b2c1...sha256...0e4a"},
     atoms=[
         ShardAtom(kind=FACT,     key="source_url",  value="https://..."),
         ShardAtom(kind=FACT,     key="title",       value="Senate passes bill..."),
         ShardAtom(kind=FACT,     key="summary",     value="A bipartisan bill..."),
-        ShardAtom(kind=FACT,     key="source_name", value="Fox News"),
+        ShardAtom(kind=FACT,     key="source_name", value="AP News"),
         ShardAtom(kind=FACT,     key="published",   value="2026-05-09T14:30:00Z"),
-        ShardAtom(kind=DECISION, key="bias_score",  value="0.72"),
-        ShardAtom(kind=DECISION, key="bias_label",  value="center-right"),
+        ShardAtom(kind=DECISION, key="bias_score",  value="0.50"),
+        ShardAtom(kind=DECISION, key="bias_label",  value="center"),
     ],
 )</pre>
 
@@ -64,9 +79,9 @@ Static site            re-rendered from the shard store each cycle
     <p>Each ingested article is written into <strong>two</strong> shards in different scopes:</p>
     <dl class="scope-list">
         <dt><code>zeitghost:article</code></dt>
-        <dd>Full internal data — original title/summary, both L/R variants, bias score and label, analysis notes, optional legacy id from the HtmxNewsEngine import. This is what powers the slider on the home page and the per-article permalink page.</dd>
+        <dd>Full internal data — original title/summary, both L/R variants, bias score and label, analysis notes, and optional metadata. This is what powers the slider on the home page and the per-article permalink page.</dd>
         <dt><code>sw:article</code></dt>
-        <dd>Consumer-agnostic format. Atom keys (<code>title</code>, <code>summary</code>, <code>bias_score</code>, ...) match the convention used by <a href="https://github.com/aaronmarkham/frio" rel="noopener">frio</a> and <a href="https://github.com/aaronmarkham/perseus-news" rel="noopener">perseus-news</a> so any spiritwriter-aware tool can read this site's data without knowing anything about zeitghost specifically. This is the layer that makes cross-app integration possible.</dd>
+        <dd>Consumer-agnostic format. Atom keys (<code>title</code>, <code>summary</code>, <code>bias_score</code>, ...) follow a stable convention so any spiritwriter-aware tool can read this site's data without knowing anything about zeitghost specifically.</dd>
     </dl>
 
     {# ─── Lineage ─────────────────────────────────────────────────────── #}
@@ -82,14 +97,7 @@ Static site            re-rendered from the shard store each cycle
 
     {# ─── Powered by spiritwriter-core ────────────────────────────────── #}
     <h3>Powered by spiritwriter-core</h3>
-    <p>The shard format, lineage, decay TTLs, and content-addressing all come from <a href="https://github.com/aaronmarkham/spiritwriter-core" rel="noopener"><strong>spiritwriter-core</strong></a> — an open-source library for building agents and applications around persistent, distributable memory.</p>
-    <p>Other apps in the spiritwriter family that use the same shard format:</p>
-    <ul>
-        <li><a href="https://github.com/aaronmarkham/frio" rel="noopener">frio</a> — county jail roster monitoring with zero-knowledge encrypted search</li>
-        <li><a href="https://github.com/aaronmarkham/perseus-news" rel="noopener">perseus-news</a> — regional enforcement news (<a href="https://www.texascrime.org">texascrime.org</a> runs on it)</li>
-        <li><a href="https://github.com/aaronmarkham/zeitghost" rel="noopener">zeitghost</a> — this site</li>
-    </ul>
-    <p>Because they all read and write the same <code>sw:article</code> shape, an article ingested here could be referenced by frio when its content is relevant to a facility, or by perseus when a story is regionally significant. That's the cross-app integration spiritwriter-core was designed to enable.</p>
+    <p>The shard format, lineage, decay TTLs, and content-addressing all come from <a href="https://github.com/aaronmarkham/spiritwriter-core" rel="noopener"><strong>spiritwriter-core</strong></a> — a library for building agents and applications around persistent, distributable memory. Because the <code>sw:article</code> atom keys follow a stable convention, any other spiritwriter-aware tool can read this site's data without needing to know anything about zeitghost specifically.</p>
 
     {# ─── Shard store stats ───────────────────────────────────────────── #}
     <h3>By the numbers</h3>

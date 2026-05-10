@@ -574,6 +574,9 @@ footer .commit-link:hover { color: var(--accent); border-color: var(--accent); }
     line-height: 1.5;
 }
 .about pre code { background: transparent; border: 0; padding: 0; font-size: inherit; }
+.about .example-label { margin: 1.25rem 0 .35rem; color: var(--muted); font-size: .9rem; }
+.about .example-label + pre { margin-top: 0; }
+.about .example-label strong { color: var(--fg); }
 .about a { color: var(--accent); }
 .about dl dt { font-weight: 600; margin-top: .75rem; color: var(--fg); }
 .about dl dd { margin: .25rem 0 0 1.5rem; color: var(--muted); }
