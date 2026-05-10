@@ -187,6 +187,16 @@ def generate_site(articles: list[AnalyzedArticle],
     if commit in ("", "unknown"):
         commit = ""
 
+    # Installed spiritwriter-core version. Useful in the footer because the
+    # wheel is rebuilt per-deploy from whatever ref CI was pointed at — knowing
+    # which release of the underlying lib generated this site closes the
+    # provenance loop alongside the commit SHA.
+    try:
+        from importlib.metadata import version, PackageNotFoundError
+        sw_core_version = version("spiritwriter-core")
+    except (PackageNotFoundError, Exception):
+        sw_core_version = ""
+
     base_ctx = {
         "site_name": site_name,
         "site_tagline": site_tagline,
@@ -194,6 +204,7 @@ def generate_site(articles: list[AnalyzedArticle],
         "total_articles": len(articles),
         "source_count": len(stats),
         "zeitghost_commit": commit,
+        "sw_core_version": sw_core_version,
     }
 
     # --- index.html with the bias slider ------------------------------------

@@ -533,7 +533,7 @@ footer {
     font-size: .85rem;
     text-align: center;
 }
-footer .commit-link {
+footer .version-pill {
     color: var(--muted);
     text-decoration: none;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -541,6 +541,7 @@ footer .commit-link {
     border: 1px solid var(--border);
     border-radius: 4px;
     padding: .05rem .35rem;
+    display: inline-block;
 }
 footer .commit-link:hover { color: var(--accent); border-color: var(--accent); }
 
