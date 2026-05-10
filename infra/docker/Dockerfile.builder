@@ -44,6 +44,14 @@ COPY --chown=zeitghost:zeitghost scripts/ ./scripts/
 COPY --chown=zeitghost:zeitghost pyproject.toml ./
 COPY --chown=zeitghost:zeitghost infra/docker/entrypoint.sh ./entrypoint.sh
 
+# Install the zeitghost package itself so the [project.scripts] entry
+# point ("zeitghost = zeitghost.cli:main") lands on PATH. --no-deps
+# because everything zeitghost depends on is already installed in the
+# builder stage.
+USER root
+RUN pip install --no-cache-dir --no-deps .
+USER zeitghost
+
 ENV PYTHONUNBUFFERED=1 \
     ZEITGHOST_SHARD_STORE=/home/zeitghost/data/shards \
     ZEITGHOST_OUTPUT=/output \
