@@ -264,7 +264,7 @@ def test_tags_from_shard_matches_article_tags():
     """tags_from_shard (used by the migration script to read existing shards)
     must produce the same result as _article_tags would for the same data —
     otherwise the in-place migration creates inconsistent tagging."""
-    from spiritwriter.trace.shard import MemoryShard, ShardAtom, AtomKind, DecayClass
+    from spiritwriter.fabric.shard import MemoryShard, ShardAtom, AtomKind, DecayClass
     from zeitghost.shards import _article_tags, tags_from_shard
 
     a = _mk("Fox News", 0.7, ["politics", "economy"])

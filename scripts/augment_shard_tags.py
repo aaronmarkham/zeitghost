@@ -25,7 +25,7 @@ from __future__ import annotations
 
 import logging
 
-from spiritwriter.trace.shard import MemoryShard
+from spiritwriter.fabric.shard import MemoryShard
 
 from zeitghost.shards import (
     init_store, tags_from_shard,

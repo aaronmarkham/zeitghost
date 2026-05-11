@@ -13,8 +13,8 @@ import logging
 import os
 from pathlib import Path
 
-from spiritwriter.trace.shard import MemoryShard, ShardAtom, AtomKind, DecayClass
-from spiritwriter.trace.store import ShardStore
+from spiritwriter.fabric.shard import MemoryShard, ShardAtom, AtomKind, DecayClass
+from spiritwriter.fabric.store import ShardStore
 
 from zeitghost.bias import AnalyzedArticle
 from zeitghost.fetcher import Article
