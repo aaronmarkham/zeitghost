@@ -149,6 +149,52 @@ def test_build_renders_with_empty_shards(tmp_path: Path):
     assert "bias-slider" in rendered
 
 
+def test_landing_template_omits_version_chip_when_unknown():
+    """If spiritwriter-core's installed version can't be resolved, the
+    template must omit the version chip entirely rather than advertise a
+    hardcoded fallback. (We previously had `or "0.6.0"` defaults that would
+    silently advertise a stale version on a lookup miss.) Footer falls back
+    to "local" when commit env var is also missing."""
+    from jinja2 import Environment, FileSystemLoader
+
+    env = Environment(
+        loader=FileSystemLoader(str(REPO_ROOT / "templates")),
+        autoescape=True,
+    )
+    rendered = env.get_template("landing.html").render(
+        sw_core_version="",
+        zeitghost_commit="",
+    )
+    # No literal version-string fallback anywhere in the rendered output —
+    # the chip should be omitted, not filled with a stand-in.
+    import re
+    assert re.search(r"\bv?\d+\.\d+\.\d+\b", rendered) is None
+    assert ">local<" in rendered
+
+
+def test_landing_template_wires_commit_link_and_social_meta():
+    """When a commit SHA is provided, the footer renders a link to the
+    GitHub commit page with the full SHA in href and short SHA as the link
+    text. Social-share meta tags must be present so link previews on
+    Twitter / Slack / Discord aren't bare."""
+    from jinja2 import Environment, FileSystemLoader
+
+    env = Environment(
+        loader=FileSystemLoader(str(REPO_ROOT / "templates")),
+        autoescape=True,
+    )
+    rendered = env.get_template("landing.html").render(
+        sw_core_version="x.y.z",
+        zeitghost_commit="abc1234deadbeef",
+    )
+    # Full SHA in href, short SHA visible in link text
+    assert "commit/abc1234deadbeef" in rendered
+    assert ">abc1234<" in rendered
+    # Social-share metadata wired up for link previews
+    assert 'property="og:image"' in rendered
+    assert 'name="twitter:card"' in rendered
+
+
 def test_template_renders_with_empty_variants():
     """If analysis returned partial data (empty variant strings), the
     template must still render — slider just won't have anything new to show."""

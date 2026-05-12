@@ -191,10 +191,10 @@ def generate_site(articles: list[AnalyzedArticle],
     # wheel is rebuilt per-deploy from whatever ref CI was pointed at — knowing
     # which release of the underlying lib generated this site closes the
     # provenance loop alongside the commit SHA.
+    from importlib.metadata import version, PackageNotFoundError
     try:
-        from importlib.metadata import version, PackageNotFoundError
         sw_core_version = version("spiritwriter-core")
-    except (PackageNotFoundError, Exception):
+    except PackageNotFoundError:
         sw_core_version = ""
 
     base_ctx = {
@@ -225,15 +225,17 @@ def generate_site(articles: list[AnalyzedArticle],
     log.info("Generated %d /source/<slug>.html pages (sources with ≥5 articles)",
              n_sources)
 
-    # --- coming-soon landing for spiritwriter.ai + www.spiritwriter.ai -----
-    # nginx serves this at the root for those hostnames (separate server
-    # block); news.spiritwriter.ai keeps the regular index.html.
-    coming_soon_tmpl = env.get_template("coming_soon.html")
-    (output_dir / "coming-soon.html").write_text(
-        coming_soon_tmpl.render(),
+    # --- spiritwriter.ai landing page --------------------------------------
+    # nginx serves this at the root for spiritwriter.ai + www.spiritwriter.ai
+    # (separate server block); news.spiritwriter.ai keeps the regular
+    # index.html. Receives sw_core_version + zeitghost_commit so the footer
+    # signature row reflects the live deploy.
+    landing_tmpl = env.get_template("landing.html")
+    (output_dir / "landing.html").write_text(
+        landing_tmpl.render(**base_ctx),
         encoding="utf-8",
     )
-    log.info("Generated coming-soon.html")
+    log.info("Generated landing.html")
 
     # --- about page — methodology, shard format, lineage explainer ---------
     about_tmpl = env.get_template("about.html")
