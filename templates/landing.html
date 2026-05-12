@@ -8,6 +8,14 @@
 <meta property="og:title" content="spiritwriter — a fabric for what your agents remember" />
 <meta property="og:description" content="Content-addressed agent memory: shards, traces, entitlements, jobs. Apache 2.0." />
 <meta property="og:type" content="website" />
+<meta property="og:url" content="https://spiritwriter.ai/" />
+<meta property="og:image" content="https://spiritwriter.ai/static/images/spirit-animals/spirit.svg" />
+<meta property="og:site_name" content="spiritwriter" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="spiritwriter — a fabric for what your agents remember" />
+<meta name="twitter:description" content="Content-addressed agent memory: shards, traces, entitlements, jobs. Apache 2.0." />
+<meta name="twitter:image" content="https://spiritwriter.ai/static/images/spirit-animals/spirit.svg" />
+<link rel="canonical" href="https://spiritwriter.ai/" />
 <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -882,7 +890,7 @@
 </div>
 
 <nav class="primary">
-  <a href="/" class="wordmark">spiritwriter<sup>v{{ sw_core_version or "0.6.0" }}</sup></a>
+  <a href="/" class="wordmark">spiritwriter{% if sw_core_version %}<sup>v{{ sw_core_version }}</sup>{% endif %}</a>
   <ul>
     <li><a href="#manifesto">Manifesto</a></li>
     <li><a href="#primitives">Primitives</a></li>
@@ -901,7 +909,7 @@
   <section class="hero" id="top">
     <div class="hero-eyebrow">
       <span class="dot"></span>
-      <span>vol. {{ sw_core_version or "0.6.0" }} — released 2026</span>
+      {% if sw_core_version %}<span>vol. {{ sw_core_version }} — released 2026</span>{% else %}<span>released 2026</span>{% endif %}
       <span class="pill">python ≥ 3.9</span>
       <span style="color:var(--ink-faint)">a library, not a service</span>
     </div>
@@ -1252,7 +1260,7 @@ context = store.<span class="fn">hydrate</span>([ref])    <span class="com"># XM
     {% else %}
     <span>deploy · <span class="hash">local</span></span>
     {% endif %}
-    <span>library · spiritwriter-core v{{ sw_core_version or "0.6.0" }}</span>
+    {% if sw_core_version %}<span>library · spiritwriter-core v{{ sw_core_version }}</span>{% else %}<span>library · spiritwriter-core</span>{% endif %}
     <span>folio <span style="color:var(--seal);">complete</span></span>
   </div>
 </footer>

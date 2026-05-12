@@ -191,10 +191,10 @@ def generate_site(articles: list[AnalyzedArticle],
     # wheel is rebuilt per-deploy from whatever ref CI was pointed at — knowing
     # which release of the underlying lib generated this site closes the
     # provenance loop alongside the commit SHA.
+    from importlib.metadata import version, PackageNotFoundError
     try:
-        from importlib.metadata import version, PackageNotFoundError
         sw_core_version = version("spiritwriter-core")
-    except (PackageNotFoundError, Exception):
+    except PackageNotFoundError:
         sw_core_version = ""
 
     base_ctx = {
