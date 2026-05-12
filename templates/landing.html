@@ -1,0 +1,1287 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>spiritwriter — a fabric for what your agents remember</title>
+<meta name="description" content="Content-addressed agent memory for AI systems. Shards that grow without losing history. Hash-chained traces. Encryption you can hand off without handing over keys. A library, not a service." />
+<meta property="og:title" content="spiritwriter — a fabric for what your agents remember" />
+<meta property="og:description" content="Content-addressed agent memory: shards, traces, entitlements, jobs. Apache 2.0." />
+<meta property="og:type" content="website" />
+<link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,300..900,0..100;1,9..144,300..900,0..100&family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..800&family=JetBrains+Mono:ital,wght@0,400..700;1,400..700&display=swap" rel="stylesheet" />
+<style>
+  /* --------------------------------------------------------------
+     spiritwriter — editorial scribal modernism
+     parchment ground, warm ink, terracotta wax seal,
+     italic display, mono spec voice, marginalia in the gutters
+     -------------------------------------------------------------- */
+
+  :root {
+    --ink:            #1A1612;
+    --ink-soft:       #3D332A;
+    --ink-faint:      #6B5F52;
+    --whisper:        #8B7B68;
+    --parchment:      #F4EDE0;
+    --parchment-deep: #EAE0CE;
+    --parchment-light:#FAF5EC;
+    --rule:           #CDBC9F;
+    --rule-soft:      #DECDB1;
+    --seal:           #B83A2A;
+    --seal-deep:      #8B2D20;
+    --seal-shadow:    rgba(184, 58, 42, 0.18);
+    --thread:         #2C5F5D;
+    --thread-light:   #5A8B89;
+    --highlight:      #E8DCA0;
+
+    --display: "Fraunces", "Newsreader", Georgia, serif;
+    --body:    "Newsreader", "Iowan Old Style", Georgia, serif;
+    --mono:    "JetBrains Mono", "SF Mono", Menlo, monospace;
+
+    --max:   78rem;
+    --gutter: clamp(1.25rem, 4vw, 3rem);
+    --rule-w: 1px;
+  }
+
+  * { box-sizing: border-box; }
+  *::selection { background: var(--seal); color: var(--parchment-light); }
+
+  html, body {
+    margin: 0;
+    background: var(--parchment);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 18px;
+    line-height: 1.55;
+    font-feature-settings: "ss01", "ss02", "kern", "liga";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  /* paper grain — subtle noise underlay */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 100;
+    opacity: 0.5;
+    mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.10  0 0 0 0 0.085  0 0 0 0 0.07  0 0 0 0.045 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  }
+
+  a { color: var(--ink); text-decoration-color: var(--rule); text-underline-offset: 0.18em; text-decoration-thickness: 1px; }
+  a:hover { color: var(--seal); text-decoration-color: var(--seal); }
+
+  /* ----- shared text registers ----- */
+
+  .mono { font-family: var(--mono); font-size: 0.78rem; letter-spacing: 0.02em; }
+  .mono-tag { font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-faint); }
+  .display { font-family: var(--display); font-variation-settings: "opsz" 144, "SOFT" 50, "wght" 400; font-weight: 400; }
+  .display-italic { font-style: italic; font-family: var(--display); font-variation-settings: "opsz" 144, "SOFT" 100, "wght" 360; }
+
+  /* ----- top bar (printer's mark) ----- */
+
+  .topbar {
+    border-bottom: var(--rule-w) solid var(--rule);
+    background: var(--parchment-light);
+  }
+  .topbar-inner {
+    max-width: var(--max);
+    margin: 0 auto;
+    padding: 0.55rem var(--gutter);
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+  .topbar-inner .right { display: flex; gap: 1.25rem; }
+  .topbar-inner .right span { white-space: nowrap; }
+  @media (max-width: 720px) {
+    .topbar-inner .right span:nth-child(2) { display: none; }
+  }
+
+  /* ----- main nav ----- */
+
+  nav.primary {
+    max-width: var(--max);
+    margin: 0 auto;
+    padding: 1.25rem var(--gutter);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: var(--rule-w) solid var(--rule-soft);
+  }
+  nav.primary .wordmark {
+    font-family: var(--display);
+    font-style: italic;
+    font-variation-settings: "opsz" 36, "SOFT" 80, "wght" 380;
+    font-size: 1.5rem;
+    letter-spacing: -0.01em;
+    line-height: 1;
+    color: var(--ink);
+    text-decoration: none;
+  }
+  nav.primary .wordmark sup {
+    font-family: var(--mono);
+    font-style: normal;
+    font-size: 0.55rem;
+    letter-spacing: 0.16em;
+    color: var(--seal);
+    margin-left: 0.35rem;
+    vertical-align: 0.6em;
+  }
+  nav.primary ul { list-style: none; margin: 0; padding: 0; display: flex; gap: 1.75rem; align-items: center; }
+  nav.primary a { font-family: var(--mono); font-size: 0.78rem; text-decoration: none; color: var(--ink-soft); }
+  nav.primary a:hover { color: var(--seal); }
+  nav.primary .gh {
+    border: 1px solid var(--ink);
+    padding: 0.35rem 0.7rem;
+    border-radius: 999px;
+    color: var(--ink);
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  nav.primary .gh:hover { background: var(--ink); color: var(--parchment-light); }
+
+  @media (max-width: 720px) {
+    nav.primary ul li:not(:last-child) { display: none; }
+  }
+
+  /* ----- container ----- */
+
+  main { max-width: var(--max); margin: 0 auto; padding: 0 var(--gutter); }
+
+  /* ----- hero ----- */
+
+  .hero {
+    padding: clamp(3rem, 9vw, 7rem) 0 clamp(3rem, 7vw, 6rem);
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+    position: relative;
+  }
+  .hero::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 1px;
+    background: var(--rule);
+  }
+
+  .hero-eyebrow {
+    display: flex;
+    gap: 1.25rem;
+    align-items: center;
+    color: var(--ink-faint);
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+  .hero-eyebrow .dot { width: 6px; height: 6px; background: var(--seal); border-radius: 50%; display: inline-block; }
+  .hero-eyebrow .pill {
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    padding: 0.18rem 0.55rem;
+    font-size: 0.6rem;
+    color: var(--ink-soft);
+  }
+
+  .hero h1 {
+    font-family: var(--display);
+    font-variation-settings: "opsz" 144, "SOFT" 70, "wght" 380;
+    font-weight: 380;
+    font-size: clamp(3.2rem, 11vw, 9.5rem);
+    line-height: 0.92;
+    letter-spacing: -0.025em;
+    margin: 0;
+    color: var(--ink);
+  }
+  .hero h1 .breakw { display: block; }
+  .hero h1 em {
+    font-style: italic;
+    font-variation-settings: "opsz" 144, "SOFT" 100, "wght" 340;
+    color: var(--seal);
+    position: relative;
+  }
+  .hero h1 em::after {
+    /* hand-drawn underline */
+    content: "";
+    position: absolute;
+    left: -2%; right: -2%; bottom: -0.06em;
+    height: 0.18em;
+    background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 20' preserveAspectRatio='none'><path d='M2 14 Q 80 4, 160 12 T 320 11 T 480 14 T 598 9' fill='none' stroke='%23B83A2A' stroke-width='3' stroke-linecap='round'/></svg>") center/100% 100% no-repeat;
+    opacity: 0;
+    animation: drawline 1.2s 0.7s cubic-bezier(0.6, 0.05, 0.3, 0.95) forwards;
+  }
+  @keyframes drawline {
+    from { clip-path: inset(0 100% 0 0); opacity: 0; }
+    to   { clip-path: inset(0 0 0 0);    opacity: 1; }
+  }
+
+  .hero-grid {
+    display: grid;
+    grid-template-columns: 1.6fr 1fr;
+    gap: clamp(2rem, 5vw, 5rem);
+    align-items: end;
+  }
+  @media (max-width: 880px) {
+    .hero-grid { grid-template-columns: 1fr; }
+  }
+
+  .hero-lede {
+    font-family: var(--body);
+    font-size: clamp(1.05rem, 1.4vw, 1.25rem);
+    line-height: 1.55;
+    color: var(--ink-soft);
+    max-width: 38ch;
+    font-weight: 380;
+  }
+  .hero-lede em { color: var(--ink); font-style: italic; }
+
+  .hero-marginalia {
+    border-left: 2px solid var(--seal);
+    padding: 0.4rem 0 0.4rem 1.1rem;
+    font-family: var(--body);
+    font-style: italic;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: var(--ink-soft);
+    max-width: 32ch;
+    position: relative;
+  }
+  .hero-marginalia::before {
+    content: "annotation";
+    display: block;
+    font-family: var(--mono);
+    font-style: normal;
+    font-size: 0.6rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--seal);
+    margin-bottom: 0.4rem;
+  }
+
+  /* CTA row */
+  .cta-row {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    align-items: stretch;
+    margin-top: 0.5rem;
+  }
+
+  .seal-button {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.95rem 1.4rem 0.95rem 1.6rem;
+    background: var(--seal);
+    color: var(--parchment-light);
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    text-decoration: none;
+    border-radius: 4px;
+    box-shadow: 0 1px 0 var(--seal-deep), 0 8px 22px var(--seal-shadow);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    overflow: hidden;
+  }
+  .seal-button::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'><filter id='wax'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' /><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.18 0'/></filter><rect width='100%25' height='100%25' filter='url(%23wax)'/></svg>");
+    mix-blend-mode: overlay;
+    pointer-events: none;
+  }
+  .seal-button:hover { transform: translateY(-1px); box-shadow: 0 1px 0 var(--seal-deep), 0 12px 28px var(--seal-shadow); }
+  .seal-button .arr { display: inline-block; transform: translateY(-1px); transition: transform 0.2s ease; }
+  .seal-button:hover .arr { transform: translate(2px, -1px); }
+
+  .copy-install {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.95rem 1.1rem;
+    background: var(--parchment-light);
+    border: 1px dashed var(--rule);
+    border-radius: 4px;
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    color: var(--ink);
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .copy-install:hover { border-style: solid; border-color: var(--ink); background: var(--parchment-deep); }
+  .copy-install .prompt { color: var(--whisper); user-select: none; }
+  .copy-install .copied {
+    color: var(--thread);
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  .copy-install.is-copied .copied { opacity: 1; }
+  .copy-install.is-copied .label { display: none; }
+
+  /* ----- section frame ----- */
+
+  section.spread {
+    padding: clamp(4rem, 8vw, 7rem) 0;
+    border-bottom: var(--rule-w) solid var(--rule);
+    position: relative;
+  }
+  section.spread:last-of-type { border-bottom: none; }
+
+  .section-head {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: baseline;
+    gap: 1.2rem;
+    margin-bottom: clamp(2rem, 4vw, 3.5rem);
+  }
+  .section-head .roman {
+    font-family: var(--display);
+    font-style: italic;
+    font-variation-settings: "opsz" 60, "SOFT" 50, "wght" 380;
+    font-size: clamp(2.5rem, 5vw, 4rem);
+    line-height: 1;
+    color: var(--seal);
+    letter-spacing: -0.02em;
+  }
+  .section-head h2 {
+    margin: 0;
+    font-family: var(--display);
+    font-variation-settings: "opsz" 144, "SOFT" 60, "wght" 360;
+    font-weight: 360;
+    font-size: clamp(1.7rem, 3.4vw, 2.7rem);
+    line-height: 1.05;
+    letter-spacing: -0.018em;
+    color: var(--ink);
+  }
+  .section-head h2 em {
+    font-style: italic;
+    font-variation-settings: "opsz" 144, "SOFT" 100, "wght" 340;
+  }
+  .section-head .folio {
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    text-align: right;
+  }
+  @media (max-width: 720px) {
+    .section-head { grid-template-columns: auto 1fr; }
+    .section-head .folio { display: none; }
+  }
+
+  /* ----- manifesto ----- */
+
+  .manifesto {
+    display: grid;
+    grid-template-columns: 1fr 1.4fr;
+    gap: clamp(2rem, 5vw, 5rem);
+    align-items: start;
+  }
+  @media (max-width: 880px) {
+    .manifesto { grid-template-columns: 1fr; }
+  }
+  .manifesto .left p.lede {
+    font-family: var(--display);
+    font-style: italic;
+    font-variation-settings: "opsz" 80, "SOFT" 100, "wght" 350;
+    font-size: clamp(1.4rem, 2.4vw, 1.85rem);
+    line-height: 1.3;
+    color: var(--ink);
+    margin: 0 0 1.2rem;
+  }
+  .manifesto .left .signature {
+    margin-top: 1.5rem;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    border-top: 1px solid var(--rule);
+    padding-top: 1rem;
+  }
+
+  .manifesto .body {
+    font-size: 1.05rem;
+    line-height: 1.65;
+    color: var(--ink-soft);
+  }
+  .manifesto .body p { margin: 0 0 1.1rem; }
+  .manifesto .body p:first-child::first-letter {
+    font-family: var(--display);
+    font-style: italic;
+    font-variation-settings: "opsz" 144, "SOFT" 100, "wght" 360;
+    font-size: 4.6em;
+    float: left;
+    line-height: 0.85;
+    margin: 0.08em 0.12em -0.1em 0;
+    color: var(--seal);
+  }
+  .manifesto .body strong { color: var(--ink); font-weight: 600; font-feature-settings: "ss01"; }
+
+  /* ----- primitives index ----- */
+
+  .primitives {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0;
+    border-top: 1px solid var(--rule);
+  }
+  @media (max-width: 720px) {
+    .primitives { grid-template-columns: 1fr; }
+  }
+
+  .primitive {
+    padding: 1.8rem 1.6rem 1.8rem 0;
+    border-bottom: 1px solid var(--rule-soft);
+    border-right: 1px solid var(--rule-soft);
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 1.1rem;
+    transition: background 0.2s ease;
+    position: relative;
+  }
+  .primitive:nth-child(2n) { border-right: none; padding-left: 1.6rem; padding-right: 0; }
+  @media (max-width: 720px) {
+    .primitive { border-right: none; padding: 1.5rem 0; }
+    .primitive:nth-child(2n) { padding-left: 0; }
+  }
+  .primitive:hover { background: rgba(184, 58, 42, 0.025); }
+
+  .primitive .num {
+    font-family: var(--display);
+    font-style: italic;
+    font-variation-settings: "opsz" 60, "SOFT" 70, "wght" 380;
+    font-size: 2.1rem;
+    line-height: 1;
+    color: var(--seal);
+    width: 2.4rem;
+  }
+  .primitive h3 {
+    margin: 0 0 0.4rem;
+    font-family: var(--display);
+    font-variation-settings: "opsz" 36, "SOFT" 50, "wght" 480;
+    font-weight: 500;
+    font-size: 1.25rem;
+    letter-spacing: -0.005em;
+    color: var(--ink);
+  }
+  .primitive h3 em {
+    font-style: italic;
+    font-variation-settings: "opsz" 36, "SOFT" 100, "wght" 380;
+    color: var(--seal);
+  }
+  .primitive p {
+    margin: 0;
+    font-size: 0.96rem;
+    color: var(--ink-soft);
+    line-height: 1.55;
+  }
+  .primitive .meta {
+    margin-top: 0.7rem;
+    display: flex;
+    gap: 0.7rem;
+    align-items: center;
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.1em;
+    color: var(--whisper);
+  }
+  .primitive .meta .tick { color: var(--thread); }
+
+  /* ----- code spread ----- */
+
+  .code-spread {
+    display: grid;
+    grid-template-columns: 1fr 1.4fr;
+    gap: clamp(2rem, 5vw, 4rem);
+    align-items: start;
+  }
+  @media (max-width: 880px) {
+    .code-spread { grid-template-columns: 1fr; }
+  }
+
+  .code-narrative h3 {
+    margin: 0 0 1rem;
+    font-family: var(--display);
+    font-style: italic;
+    font-variation-settings: "opsz" 60, "SOFT" 100, "wght" 360;
+    font-size: clamp(1.5rem, 2.4vw, 2rem);
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+  }
+  .code-narrative p {
+    color: var(--ink-soft);
+    font-size: 1rem;
+    line-height: 1.6;
+    margin: 0 0 1rem;
+  }
+  .code-narrative ul {
+    list-style: none;
+    padding: 0;
+    margin: 1.5rem 0 0;
+    border-top: 1px solid var(--rule-soft);
+  }
+  .code-narrative li {
+    border-bottom: 1px solid var(--rule-soft);
+    padding: 0.85rem 0;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.9rem;
+    align-items: baseline;
+    font-size: 0.95rem;
+    color: var(--ink-soft);
+  }
+  .code-narrative li .k {
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--seal);
+    white-space: nowrap;
+  }
+
+  .code-block {
+    background: #1A1612;
+    color: #EDE2C8;
+    border-radius: 6px;
+    padding: 1.5rem 1.6rem;
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    line-height: 1.6;
+    overflow-x: auto;
+    position: relative;
+    box-shadow: 0 18px 48px -12px rgba(26, 22, 18, 0.18);
+  }
+  .code-block::before {
+    content: "spiritwriter // example.py";
+    position: absolute;
+    top: 0.6rem;
+    right: 1.1rem;
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(237, 226, 200, 0.4);
+  }
+  .code-block pre { margin: 0; padding-top: 0.4rem; white-space: pre; }
+  .code-block .kw  { color: #E9A2A2; }
+  .code-block .fn  { color: #F2D9A1; }
+  .code-block .str { color: #B8D8B0; }
+  .code-block .com { color: #847663; font-style: italic; }
+  .code-block .num { color: #DCC892; }
+  .code-block .var { color: #E8D9BB; }
+  .code-block .typ { color: #C4B0DA; }
+
+  /* ----- bear feature ----- */
+
+  .bear {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(2rem, 5vw, 5rem);
+    align-items: start;
+  }
+  @media (max-width: 880px) {
+    .bear { grid-template-columns: 1fr; }
+  }
+
+  .bear-prose {
+    font-size: 1.02rem;
+    line-height: 1.65;
+    color: var(--ink-soft);
+  }
+  .bear-prose p { margin: 0 0 1.1rem; }
+  .bear-prose p:first-of-type::first-letter {
+    font-family: var(--display);
+    font-style: italic;
+    font-variation-settings: "opsz" 144, "SOFT" 100, "wght" 360;
+    font-size: 4.2em;
+    float: left;
+    line-height: 0.85;
+    margin: 0.08em 0.14em -0.1em 0;
+    color: var(--seal);
+  }
+  .bear-prose strong { color: var(--ink); font-weight: 600; }
+  .bear-prose em { font-style: italic; color: var(--ink); }
+
+  .bear-aside {
+    background: var(--parchment-light);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: 1.6rem 1.5rem;
+    position: sticky;
+    top: 2rem;
+  }
+  .bear-aside h4 {
+    margin: 0 0 1rem;
+    font-family: var(--display);
+    font-style: italic;
+    font-variation-settings: "opsz" 36, "SOFT" 100, "wght" 380;
+    font-weight: 400;
+    font-size: 1.15rem;
+    color: var(--ink);
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 0.7rem;
+  }
+  .tier-table { width: 100%; border-collapse: collapse; }
+  .tier-table th, .tier-table td {
+    padding: 0.65rem 0.4rem;
+    text-align: left;
+    font-size: 0.85rem;
+    border-bottom: 1px solid var(--rule-soft);
+  }
+  .tier-table th {
+    font-family: var(--mono);
+    font-weight: 500;
+    font-size: 0.62rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+  .tier-table tr:last-child td { border-bottom: none; }
+  .tier-table .tier {
+    font-family: var(--mono);
+    font-weight: 500;
+    color: var(--seal);
+    font-size: 0.78rem;
+  }
+  .tier-table .action.auto { color: var(--thread); font-weight: 500; }
+  .tier-table .action.flag { color: var(--ink-faint); }
+
+  .bear-aside .num-fact {
+    margin-top: 1.3rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--rule);
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.9rem;
+    align-items: baseline;
+  }
+  .bear-aside .num-fact .v {
+    font-family: var(--display);
+    font-variation-settings: "opsz" 60, "SOFT" 50, "wght" 460;
+    font-size: 2.2rem;
+    line-height: 1;
+    color: var(--seal);
+  }
+  .bear-aside .num-fact .l {
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    line-height: 1.4;
+  }
+
+  /* ----- used-by marquee ----- */
+
+  .used-by {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0;
+    border-top: 1px solid var(--rule);
+  }
+  @media (max-width: 720px) { .used-by { grid-template-columns: 1fr; } }
+
+  .used-by .item {
+    border-bottom: 1px solid var(--rule-soft);
+    border-right: 1px solid var(--rule-soft);
+    padding: 1.6rem 1.4rem 1.6rem 0;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    gap: 0.6rem;
+    transition: background 0.2s ease;
+  }
+  .used-by .item:nth-child(2n) { border-right: none; padding-left: 1.4rem; padding-right: 0; }
+  @media (max-width: 720px) {
+    .used-by .item, .used-by .item:nth-child(2n) {
+      border-right: none; padding: 1.5rem 0;
+    }
+  }
+  .used-by .item:hover { background: rgba(44, 95, 93, 0.04); }
+  .used-by .item .domain {
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--thread);
+  }
+  .used-by .item h4 {
+    margin: 0;
+    font-family: var(--display);
+    font-variation-settings: "opsz" 36, "SOFT" 60, "wght" 460;
+    font-weight: 500;
+    font-size: 1.2rem;
+    color: var(--ink);
+  }
+  .used-by .item h4 em { font-style: italic; color: var(--seal); font-variation-settings: "opsz" 36, "SOFT" 100, "wght" 380; }
+  .used-by .item p { margin: 0; font-size: 0.92rem; color: var(--ink-soft); line-height: 1.5; }
+  .used-by .item .visit {
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink);
+    text-decoration: none;
+    align-self: end;
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 0.18rem;
+    width: fit-content;
+  }
+  .used-by .item .visit:hover { color: var(--seal); border-bottom-color: var(--seal); }
+
+  /* ----- weave divider ----- */
+
+  .weave {
+    height: 28px;
+    background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 80 16' preserveAspectRatio='none'><path d='M0 8 Q 10 0, 20 8 T 40 8 T 60 8 T 80 8' fill='none' stroke='%23B83A2A' stroke-width='1' opacity='0.55'/><path d='M0 8 Q 10 16, 20 8 T 40 8 T 60 8 T 80 8' fill='none' stroke='%232C5F5D' stroke-width='1' opacity='0.55'/></svg>") repeat-x center;
+    background-size: 80px 16px;
+    margin: 0;
+    opacity: 0.7;
+  }
+
+  /* ----- closing CTA ----- */
+
+  .closing {
+    text-align: center;
+    padding: clamp(4rem, 8vw, 6rem) 0;
+  }
+  .closing .lockup {
+    font-family: var(--display);
+    font-variation-settings: "opsz" 144, "SOFT" 80, "wght" 360;
+    font-size: clamp(2.5rem, 6vw, 5rem);
+    line-height: 1;
+    letter-spacing: -0.02em;
+    margin: 0 0 1.5rem;
+  }
+  .closing .lockup em { font-style: italic; color: var(--seal); font-variation-settings: "opsz" 144, "SOFT" 100, "wght" 340; }
+  .closing p {
+    max-width: 38ch;
+    margin: 0 auto 2rem;
+    color: var(--ink-soft);
+    font-size: 1.05rem;
+    line-height: 1.55;
+  }
+  .closing .cta-row { justify-content: center; }
+
+  /* ----- colophon footer ----- */
+
+  footer.colophon {
+    border-top: var(--rule-w) solid var(--rule);
+    background: var(--parchment-deep);
+  }
+  .colophon-inner {
+    max-width: var(--max);
+    margin: 0 auto;
+    padding: 2.5rem var(--gutter) 1.6rem;
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr 1fr;
+    gap: 2rem;
+  }
+  @media (max-width: 880px) {
+    .colophon-inner { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 520px) {
+    .colophon-inner { grid-template-columns: 1fr; }
+  }
+  .colophon h5 {
+    margin: 0 0 0.85rem;
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    font-weight: 500;
+  }
+  .colophon ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+  .colophon a { font-family: var(--mono); font-size: 0.82rem; color: var(--ink); text-decoration: none; }
+  .colophon a:hover { color: var(--seal); }
+  .colophon .blurb {
+    font-family: var(--display);
+    font-style: italic;
+    font-variation-settings: "opsz" 36, "SOFT" 100, "wght" 360;
+    font-size: 1.15rem;
+    line-height: 1.4;
+    color: var(--ink);
+  }
+  .colophon .blurb-meta {
+    margin-top: 0.9rem;
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.1em;
+    color: var(--whisper);
+    line-height: 1.6;
+  }
+
+  .signature-row {
+    max-width: var(--max);
+    margin: 0 auto;
+    padding: 1rem var(--gutter) 2rem;
+    border-top: 1px solid var(--rule);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--whisper);
+    flex-wrap: wrap;
+  }
+  .signature-row .hash { color: var(--ink-faint); }
+
+  /* ----- reveal-on-scroll ----- */
+
+  .reveal { opacity: 0; transform: translateY(14px); transition: opacity 0.7s ease, transform 0.7s ease; }
+  .reveal.in { opacity: 1; transform: translateY(0); }
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1; transform: none; }
+    .hero h1 em::after { animation: none; opacity: 1; clip-path: none; }
+  }
+
+  /* ----- staggered hero entrance ----- */
+  .hero > * { opacity: 0; transform: translateY(10px); animation: rise 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) forwards; }
+  .hero > *:nth-child(1) { animation-delay: 0.05s; }
+  .hero > *:nth-child(2) { animation-delay: 0.18s; }
+  .hero > *:nth-child(3) { animation-delay: 0.32s; }
+  @keyframes rise { to { opacity: 1; transform: translateY(0); } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero > * { animation: none; opacity: 1; transform: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <span>spiritwriter / library no. <span style="color:var(--seal);">vi</span></span>
+    <div class="right">
+      <span>content-addressed memory for agentic systems</span>
+      <span>verified · sha-256</span>
+      <span>apache 2.0</span>
+    </div>
+  </div>
+</div>
+
+<nav class="primary">
+  <a href="/" class="wordmark">spiritwriter<sup>v{{ sw_core_version or "0.6.0" }}</sup></a>
+  <ul>
+    <li><a href="#manifesto">Manifesto</a></li>
+    <li><a href="#primitives">Primitives</a></li>
+    <li><a href="#code">Code</a></li>
+    <li><a href="#bear">Phalanx</a></li>
+    <li><a href="#used-by">Used by</a></li>
+    <li><a class="gh" href="https://github.com/aaronmarkham/spiritwriter-core">GitHub ↗</a></li>
+  </ul>
+</nav>
+
+<main>
+
+  <!-- ============================================================
+       HERO
+       ============================================================ -->
+  <section class="hero" id="top">
+    <div class="hero-eyebrow">
+      <span class="dot"></span>
+      <span>vol. {{ sw_core_version or "0.6.0" }} — released 2026</span>
+      <span class="pill">python ≥ 3.9</span>
+      <span style="color:var(--ink-faint)">a library, not a service</span>
+    </div>
+
+    <h1 class="display">
+      A <em>fabric</em> for
+      <span class="breakw">what your agents</span>
+      <span class="breakw">remember.</span>
+    </h1>
+
+    <div class="hero-grid">
+      <div>
+        <p class="hero-lede">
+          Content-addressed agent memory for AI systems. Shards that grow without losing history. Hash-chained traces that prove what ran. Encryption you can hand off without handing over keys. <em>A library, not a service.</em>
+        </p>
+        <div class="cta-row">
+          <a class="seal-button" href="https://github.com/aaronmarkham/spiritwriter-core">
+            <span>Open the source</span>
+            <span class="arr">→</span>
+          </a>
+          <button type="button" class="copy-install" id="copyInstall" aria-label="Copy install command">
+            <span class="prompt">$</span>
+            <span class="label">pip&nbsp;install&nbsp;spiritwriter-core</span>
+            <span class="copied">copied</span>
+          </button>
+        </div>
+      </div>
+
+      <aside class="hero-marginalia">
+        <em>Spirit</em> as in <em>spiritus</em> — that which animates. Spiritwriter writes the persistent layer beneath the agent: what was learned, when, by whom, under what authority. The substrate, not the surface.
+      </aside>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       MANIFESTO
+       ============================================================ -->
+  <section class="spread" id="manifesto">
+    <div class="section-head reveal">
+      <div class="roman">I.</div>
+      <h2>The premise, <em>plainly stated.</em></h2>
+      <div class="folio">folio i — manifesto</div>
+    </div>
+
+    <div class="manifesto reveal">
+      <div class="left">
+        <p class="lede">An agent that cannot remember what it learned, or prove what it did, is not infrastructure. It is a sketch.</p>
+        <div class="signature">— filed under <span style="color:var(--seal)">/fabric</span></div>
+      </div>
+      <div class="body">
+        <p>Most memory systems for AI either embed everything into a vector and lose the lineage, or they bolt on a database and surrender locality, ownership, and proof. <strong>Spiritwriter takes the older, harder route.</strong> Knowledge is broken into atoms with explicit fields. Atoms compose into shards. Shards are addressed by the hash of their contents, so identical content from different agents resolves to the same record — no duplicates, no drift.</p>
+
+        <p>Above the shards: <strong>traces</strong>. Every step an agent takes is appended to a hash-chained log; tampering with one entry breaks the chain after it. <strong>Entitlements</strong> let you delegate work to a sub-agent without surrendering master keys. <strong>Encryption</strong> comes in two postures, picked by who you don't trust. And <strong>Phalanx</strong> resolves entities by their defining fields, not their surface forms — so "Bear" the dog never silently merges with "Bear" the brand.</p>
+
+        <p>It is a library, not a service. One <code style="font-family:var(--mono);font-size:0.85em;background:var(--parchment-deep);padding:0.05em 0.35em;border-radius:3px;">pip install</code>, no daemon, no vector store to host, no GPU. The artifact <em>is</em> the registry — version-controlled, emailed, restored from a backup like any other file.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       PRIMITIVES
+       ============================================================ -->
+  <section class="spread" id="primitives">
+    <div class="section-head reveal">
+      <div class="roman">II.</div>
+      <h2>Primitives, in <em>order of use.</em></h2>
+      <div class="folio">folio ii — index</div>
+    </div>
+
+    <div class="primitives">
+      <article class="primitive reveal">
+        <div class="num">i</div>
+        <div>
+          <h3>Memory <em>Shards</em></h3>
+          <p>Knowledge that grows without losing history. New observations supersede old via lineage links; identical content from different agents dedupes into a single record. Decay classes prune what shouldn't outlive its purpose.</p>
+          <div class="meta"><span class="tick">●</span><span>sha-256 over atoms + scope + origin</span></div>
+        </div>
+      </article>
+
+      <article class="primitive reveal">
+        <div class="num">ii</div>
+        <div>
+          <h3>The <em>Shard Store</em></h3>
+          <p>Local-first storage on disk; transparently fetches missing shards from a network when one is configured. Named refs handle the "latest version of X" pattern without breaking content addressing.</p>
+          <div class="meta"><span class="tick">●</span><span>git-style object layout · optional ipfs L2</span></div>
+        </div>
+      </article>
+
+      <article class="primitive reveal">
+        <div class="num">iii</div>
+        <div>
+          <h3><em>Encryption,</em> two postures</h3>
+          <p>AES-256-GCM when the operator and key-holder cooperate. NaCl sealed boxes when the operator must <em>not</em> see content — multi-tenant hosting, source protection, zero-knowledge monitoring. Pick by who you don't trust.</p>
+          <div class="meta"><span class="tick">●</span><span>aes-gcm · nacl · ed25519</span></div>
+        </div>
+      </article>
+
+      <article class="primitive reveal">
+        <div class="num">iv</div>
+        <div>
+          <h3><em>Entitlements</em></h3>
+          <p>Delegate scoped access to a sub-agent without handing over master keys. Tokens bundle decryption keys, scope patterns, capabilities, and budget; the store enforces every constraint before decrypting.</p>
+          <div class="meta"><span class="tick">●</span><span>bearer · scoped · budgeted</span></div>
+        </div>
+      </article>
+
+      <article class="primitive reveal">
+        <div class="num">v</div>
+        <div>
+          <h3>Delegated <em>Jobs</em></h3>
+          <p>Package encrypted content + task + entitlement into one unit of sub-agent work. The orchestrator hands the package over; the sub-agent hydrates, executes, returns a result shard. Every step traced.</p>
+          <div class="meta"><span class="tick">●</span><span>jobspec · package · hydrate · settle</span></div>
+        </div>
+      </article>
+
+      <article class="primitive reveal">
+        <div class="num">vi</div>
+        <div>
+          <h3><em>Phalanx</em> — entity resolution</h3>
+          <p>Tell entities apart even when names collide ("Bear" the dog vs. "Bear" the brand) and merge them when surface forms diverge ("Carlos Martinez" vs. "MARTINEZ, CARLOS A"). Same primitive, both directions.</p>
+          <div class="meta"><span class="tick">●</span><span>cmc-lite · ess digest · tiered</span></div>
+        </div>
+      </article>
+
+      <article class="primitive reveal">
+        <div class="num">vii</div>
+        <div>
+          <h3><em>Tracing</em></h3>
+          <p>Replay exactly what an agent did, prove nothing's been edited, render the run as workflow / genealogy / multi-agent diagrams. Hash-chained JSONL with optional Ed25519 signing.</p>
+          <div class="meta"><span class="tick">●</span><span>jsonl · chained · signable</span></div>
+        </div>
+      </article>
+
+      <article class="primitive reveal">
+        <div class="num">viii</div>
+        <div>
+          <h3><em>Audit</em></h3>
+          <p>Tamper-evident security audits for Android APKs. Inputs, evidence, findings, and final report bound into a hash-chained trace plus a self-hashing witness — anyone with the APK can re-run verification offline.</p>
+          <div class="meta"><span class="tick">●</span><span>traced · witnessed · re-runnable</span></div>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <div class="weave"></div>
+
+  <!-- ============================================================
+       CODE SAMPLE
+       ============================================================ -->
+  <section class="spread" id="code">
+    <div class="section-head reveal">
+      <div class="roman">III.</div>
+      <h2>The <em>shape</em> of the API.</h2>
+      <div class="folio">folio iii — quickstart</div>
+    </div>
+
+    <div class="code-spread">
+      <div class="code-narrative reveal">
+        <h3>Same content, same id. Always.</h3>
+        <p>A shard is an immutable record of atoms — facts, conventions, observations — bound to a scope and an origin. Its identity is the SHA-256 of what it contains, so writing the same shard twice is a no-op. Hydration returns XML-tagged context, ready to drop into a prompt.</p>
+        <ul>
+          <li><span class="k">put</span><span>idempotent. duplicates dedupe.</span></li>
+          <li><span class="k">hydrate</span><span>returns prompt-ready XML.</span></li>
+          <li><span class="k">decay</span><span>permanent · stable · active · session.</span></li>
+          <li><span class="k">scope</span><span>queryable namespace.</span></li>
+        </ul>
+      </div>
+
+      <div class="code-block reveal" aria-label="Python example">
+<pre><span class="kw">from</span> <span class="var">spiritwriter.fabric.shard</span> <span class="kw">import</span> (
+    <span class="typ">MemoryShard</span>, <span class="typ">ShardAtom</span>, <span class="typ">AtomKind</span>, <span class="typ">DecayClass</span>,
+)
+<span class="kw">from</span> <span class="var">spiritwriter.fabric.store</span> <span class="kw">import</span> <span class="typ">ShardStore</span>
+
+store = <span class="fn">ShardStore</span>(<span class="str">"~/.myapp/shards"</span>)
+
+shard = <span class="fn">MemoryShard</span>(
+    atoms=[
+        <span class="fn">ShardAtom</span>(
+            text=<span class="str">"Project uses FastAPI"</span>,
+            kind=<span class="typ">AtomKind</span>.FACT,
+            entity=<span class="str">"myproject"</span>,
+            key=<span class="str">"framework"</span>,
+            value=<span class="str">"FastAPI"</span>,
+        ),
+        <span class="fn">ShardAtom</span>(
+            text=<span class="str">"Always run migrations before deploy"</span>,
+            kind=<span class="typ">AtomKind</span>.CONVENTION,
+            entity=<span class="str">"myproject"</span>,
+            key=<span class="str">"deploy_rule"</span>,
+            value=<span class="str">"migrations-first"</span>,
+        ),
+    ],
+    scope=<span class="str">"project:myproject"</span>,
+    origin=<span class="str">"dev-agent"</span>,
+    decay_class=<span class="typ">DecayClass</span>.STABLE,
+)
+
+ref     = store.<span class="fn">put</span>(shard)        <span class="com"># idempotent — same content, same id</span>
+context = store.<span class="fn">hydrate</span>([ref])    <span class="com"># XML-tagged, prompt-ready</span></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       BEAR PROBLEM
+       ============================================================ -->
+  <section class="spread" id="bear">
+    <div class="section-head reveal">
+      <div class="roman">IV.</div>
+      <h2>The <em>Bear</em> problem.</h2>
+      <div class="folio">folio iv — phalanx</div>
+    </div>
+
+    <div class="bear">
+      <div class="bear-prose reveal">
+        <p>You're extracting facts about Aaron from a stack of documents. Document 1 surfaces "Bear is Aaron's favorite." Document 2: "Aaron and Bear were at the park." Document 3: "Aaron's dog Bear, a 10-year-old black lab / border collie mix."</p>
+
+        <p>Each document gives partial defining-field coverage. Your extractor classifies Bear three different ways. Three identifiers for the same entity, and they don't align. A naive system keeps them separate; a sloppy one collapses by surface name and now Bear-the-dog merges with Bear-the-beer-brand from Document 4. Embedding-based systems hallucinate the boundaries — "Bear" the dog scores close to "Bear" the bear scores close to "Bear" the brand, and the merge decisions become unauditable.</p>
+
+        <p><strong>Phalanx hashes the <em>defining fields</em></strong> — name, entity type, owner, dob — into an Entity Sense Signature: a deterministic identity hash. As more documents land, the field set per entity grows. The growing field set produces a stable ESS the moment you have enough fields to disambiguate. Fields not yet known don't penalize — they're absent from the hash.</p>
+
+        <p>The same primitive handles the inverse. "Carlos Martinez", "MARTINEZ, CARLOS A", and "C. Martinez" across three rosters dedupe into one entity, because their defining fields normalize to the same hash regardless of surface spelling.</p>
+      </div>
+
+      <aside class="bear-aside reveal">
+        <h4>Resolution tiers</h4>
+        <table class="tier-table">
+          <thead>
+            <tr><th>Tier</th><th>Match</th><th>Action</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="tier">T1</td><td>Exact ESS digest</td><td class="action auto">Auto-merge</td></tr>
+            <tr><td class="tier">T2</td><td>High fuzzy + ESS overlap</td><td class="action auto">Auto-merge</td></tr>
+            <tr><td class="tier">T3</td><td>Fuzzy, lower combined</td><td class="action flag">Flag</td></tr>
+            <tr><td class="tier">T4</td><td>Weak context overlap</td><td class="action flag">Flag</td></tr>
+          </tbody>
+        </table>
+
+        <div class="num-fact">
+          <div class="v">≥85<span style="font-size:0.5em;color:var(--ink-faint);"> %</span></div>
+          <div class="l">recall on semantic duplicates with ≤5% false-merge rate. No embeddings, no LLM in the merge path.</div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       USED BY
+       ============================================================ -->
+  <section class="spread" id="used-by">
+    <div class="section-head reveal">
+      <div class="roman">V.</div>
+      <h2>In production, <em>quietly.</em></h2>
+      <div class="folio">folio v — citations</div>
+    </div>
+
+    <div class="used-by">
+      <article class="item reveal">
+        <div class="domain">frio.help</div>
+        <h4><em>frio</em> — zero-knowledge jail roster monitoring</h4>
+        <p>Encrypted search shards and fuzzy name matching for monitoring without disclosing the watchlist.</p>
+        <a class="visit" href="https://frio.help">visit ↗</a>
+      </article>
+      <article class="item reveal">
+        <div class="domain">news.spiritwriter.ai</div>
+        <h4><em>news</em> — dual-perspective with bias detection</h4>
+        <p>Two points of view per story, plus transparent bias detection, source selection, and reader analytics — every judgment auditable through the trace.</p>
+        <a class="visit" href="https://news.spiritwriter.ai">visit ↗</a>
+      </article>
+      <article class="item reveal">
+        <div class="domain">podcasts.spiritwriter.ai</div>
+        <h4><em>podcasts</em> — multi-agent video → audio</h4>
+        <p>AI-generated podcasts assembled from multi-agent video production traces.</p>
+        <a class="visit" href="https://podcasts.spiritwriter.ai">visit ↗</a>
+      </article>
+      <article class="item reveal">
+        <div class="domain">github / claude-studio-producer</div>
+        <h4><em>Studio Producer</em> — media production pipeline</h4>
+        <p>Canonical worked example for traced workflows; checkpointed multi-stage producer agent.</p>
+        <a class="visit" href="https://github.com/aaronmarkham/claude-studio-producer">visit ↗</a>
+      </article>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       CLOSING CTA
+       ============================================================ -->
+  <section class="spread closing reveal">
+    <h2 class="lockup">Bring your own <em>agents.</em></h2>
+    <p>One pip install. No service to host, no vector DB to keep alive. Read the source — it is the documentation that compiles.</p>
+    <div class="cta-row">
+      <a class="seal-button" href="https://github.com/aaronmarkham/spiritwriter-core">
+        <span>Read the source</span><span class="arr">→</span>
+      </a>
+      <a class="copy-install" href="https://github.com/aaronmarkham/spiritwriter-core#documentation" style="cursor: pointer; text-decoration: none;">
+        <span class="prompt">¶</span>
+        <span class="label">browse the documentation</span>
+      </a>
+    </div>
+  </section>
+
+</main>
+
+<!-- ============================================================
+     COLOPHON
+     ============================================================ -->
+<footer class="colophon">
+  <div class="colophon-inner">
+    <div>
+      <p class="blurb">Set in <em>Fraunces</em>, <em>Newsreader</em>, and <em>JetBrains&nbsp;Mono</em>. Pressed onto parchment. Sealed in terracotta.</p>
+      <div class="blurb-meta">
+        © 2026 spiritwriter contributors<br>
+        apache 2.0 · python ≥ 3.9
+      </div>
+    </div>
+    <div>
+      <h5>Library</h5>
+      <ul>
+        <li><a href="https://github.com/aaronmarkham/spiritwriter-core">github</a></li>
+        <li><a href="https://github.com/aaronmarkham/spiritwriter-core#documentation">docs</a></li>
+        <li><a href="https://github.com/aaronmarkham/spiritwriter-core/tree/main/examples">examples</a></li>
+        <li><a href="https://pypi.org/project/spiritwriter-core/">pypi</a></li>
+      </ul>
+    </div>
+    <div>
+      <h5>Companion</h5>
+      <ul>
+        <li><a href="https://news.spiritwriter.ai">news.spiritwriter.ai</a></li>
+        <li><a href="https://podcasts.spiritwriter.ai">podcasts</a></li>
+        <li><a href="https://github.com/aaronmarkham/mempalace">mempalace</a></li>
+        <li><a href="https://frio.help">frio</a></li>
+      </ul>
+    </div>
+    <div>
+      <h5>Specs</h5>
+      <ul>
+        <li><a href="https://github.com/aaronmarkham/spiritwriter-core/blob/main/docs/substrate-flavor.md">substrate flavor</a></li>
+        <li><a href="https://github.com/aaronmarkham/spiritwriter-core/blob/main/docs/specs/cmc-spec-v0.1.md">cmc-lite</a></li>
+        <li><a href="https://github.com/aaronmarkham/spiritwriter-core/blob/main/docs/tracing.md">tracing</a></li>
+        <li><a href="https://github.com/aaronmarkham/spiritwriter-core/blob/main/docs/audit.md">audit</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="signature-row">
+    {% if zeitghost_commit %}
+    <span>deploy · <a href="https://github.com/aaronmarkham/zeitghost/commit/{{ zeitghost_commit }}" class="hash" style="color:var(--ink-faint);text-decoration-color:var(--rule);">{{ zeitghost_commit[:7] }}</a></span>
+    {% else %}
+    <span>deploy · <span class="hash">local</span></span>
+    {% endif %}
+    <span>library · spiritwriter-core v{{ sw_core_version or "0.6.0" }}</span>
+    <span>folio <span style="color:var(--seal);">complete</span></span>
+  </div>
+</footer>
+
+<script>
+  // copy-to-clipboard for install command
+  const btn = document.getElementById('copyInstall');
+  if (btn) {
+    btn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText('pip install spiritwriter-core');
+        btn.classList.add('is-copied');
+        setTimeout(() => btn.classList.remove('is-copied'), 1500);
+      } catch (e) { /* ignore */ }
+    });
+  }
+
+  // reveal on scroll
+  const io = new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('in');
+        io.unobserve(entry.target);
+      }
+    }
+  }, { rootMargin: '0px 0px -10% 0px', threshold: 0.05 });
+
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+</script>
+
+</body>
+</html>

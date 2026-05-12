@@ -591,37 +591,5 @@ footer .commit-link:hover { color: var(--accent); border-color: var(--accent); }
 }
 .stat-list strong { color: var(--accent); font-variant-numeric: tabular-nums; }
 
-/* Standalone coming-soon landing page (served at spiritwriter.ai +
- * www.spiritwriter.ai while those domains migrate off the old site) */
-.coming-soon-body {
-    margin: 0;
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.coming-soon {
-    text-align: center;
-    max-width: 32rem;
-    padding: 2rem;
-}
-.coming-soon-logo {
-    width: 96px;
-    height: 96px;
-    margin: 0 auto 1rem;
-    display: block;
-}
-.coming-soon h1.brand-text {
-    font-size: 4rem;
-    margin: .5rem 0 1.5rem;
-    line-height: 1;
-}
-.coming-soon .lead { font-size: 1.1rem; margin: .35rem 0; color: var(--fg); }
-.coming-soon .lead.muted { color: var(--muted); }
-.coming-soon .cta { margin-top: 2.5rem; font-size: 1rem; }
-.coming-soon .cta a {
-    color: var(--accent);
-    text-decoration: none;
-    font-weight: 600;
-}
-.coming-soon .cta a:hover { text-decoration: underline; }
+/* The spiritwriter.ai landing page is fully self-contained
+ * (templates/landing.html ships its own embedded styles), so no rules here. */
