@@ -16,13 +16,29 @@ from pathlib import Path
 from spiritwriter.fabric.shard import MemoryShard, ShardAtom, AtomKind, DecayClass
 from spiritwriter.fabric.store import ShardStore
 
-from zeitghost.bias import AnalyzedArticle
+from zeitghost import __version__ as _zg_version
+from zeitghost.bias import AnalyzedArticle, DEFAULT_MODEL
 from zeitghost.fetcher import Article
 
 log = logging.getLogger(__name__)
 
 SCOPE_INTERNAL = "zeitghost:article"
 SCOPE_SW_ARTICLE = "sw:article"
+
+
+def _agent_string() -> str:
+    """Identify the agent that wrote this shard: zeitghost version +
+    the underlying spiritwriter-core wheel version. Used in shard atoms so
+    the card's flip-panel can show what physically produced the analysis."""
+    try:
+        from importlib.metadata import version, PackageNotFoundError
+        try:
+            sw = version("spiritwriter-core")
+        except PackageNotFoundError:
+            sw = "?"
+    except ImportError:
+        sw = "?"
+    return f"zeitghost/{_zg_version} sw_core/{sw}"
 
 
 def init_store(store_path: Path | None = None) -> ShardStore:
@@ -193,6 +209,21 @@ def article_to_internal_shard(article: AnalyzedArticle, store: ShardStore,
             kind=AtomKind.CONTEXT, entity=entity,
             key="analysis_notes", value=article.analysis_notes,
         ))
+    # Provenance — which model + agent produced this analysis. Surfaced on
+    # the card's flip-panel; lets us tell "was this re-analyzed by a newer
+    # model?" by following the parent_shard_id chain.
+    model_used = article.model or DEFAULT_MODEL
+    agent_used = article.agent or _agent_string()
+    atoms.append(ShardAtom(
+        text=f"Model: {model_used}",
+        kind=AtomKind.CONTEXT, entity=entity,
+        key="model", value=model_used,
+    ))
+    atoms.append(ShardAtom(
+        text=f"Agent: {agent_used}",
+        kind=AtomKind.CONTEXT, entity=entity,
+        key="agent", value=agent_used,
+    ))
     # Preserve HtmxNewsEngine row id for old share-link URL parity.
     if article.original.legacy_id is not None:
         atoms.append(ShardAtom(
@@ -304,6 +335,14 @@ def _shard_to_article(shard: MemoryShard) -> AnalyzedArticle | None:
         categories=categories,
         legacy_id=legacy_id,
     )
+    # Tally atom kinds for the card flip-panel's "ATOMS" section
+    atom_kinds: dict[str, int] = {}
+    for atom in shard.atoms:
+        # AtomKind is an enum; .name (or .value) gives a stable lowercase label
+        kind_name = (atom.kind.value if hasattr(atom.kind, "value")
+                     else str(atom.kind)).lower()
+        atom_kinds[kind_name] = atom_kinds.get(kind_name, 0) + 1
+
     try:
         return AnalyzedArticle(
             original=original,
@@ -314,6 +353,17 @@ def _shard_to_article(shard: MemoryShard) -> AnalyzedArticle | None:
             variant_right_title=vals.get("variant_right_title", original.title),
             variant_right_summary=vals.get("variant_right_summary", ""),
             analysis_notes=vals.get("analysis_notes", ""),
+            shard_id=shard.shard_id,
+            parent_shard_id=shard.parent_shard_id,
+            shard_created_at=shard.created_at or "",
+            shard_scope=shard.scope,
+            shard_decay=(shard.decay_class.value
+                         if hasattr(shard.decay_class, "value")
+                         else str(shard.decay_class)),
+            shard_tags=list(shard.tags or []),
+            shard_atom_kinds=atom_kinds,
+            model=vals.get("model", ""),
+            agent=vals.get("agent", ""),
         )
     except (ValueError, TypeError) as e:
         log.warning("Failed to reconstruct article from shard %s: %s",

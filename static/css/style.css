@@ -1,595 +1,1496 @@
-/* Zeitghost — dark theme, bias slider focus */
+/* ============================================================
+   Zeitghost — Daily Bias Index
+   Modernist data-newspaper. Light paper, warm ink, the bias
+   axis as a real measurement instrument. Sibling to the
+   spiritwriter.ai landing (shares Newsreader + JetBrains Mono,
+   re-uses terracotta as the right-leaning end of the scale).
+   ============================================================ */
+
 :root {
-    --bg: #0d1117;
-    --fg: #e6edf3;
-    --muted: #8b949e;
-    --card: #161b22;
-    --border: #30363d;
-    --accent: #58a6ff;
-    --left: #4f8cc9;
-    --center: #b5c2cf;
-    --right: #d96458;
+    /* Paper + ink */
+    --paper:       #F4F1EA;
+    --paper-2:     #ECE5D2;
+    --paper-tint:  #FAF7F0;
+    --ink:         #14110E;
+    --ink-2:       #2E2823;
+    --ink-3:       #6B5F52;
+    --ink-4:       #968875;
+    --rule:        #BFB39B;
+    --rule-soft:   #D5C9AE;
+    --rule-faint:  #E4DAC1;
+
+    /* Bias axis — oxford blue ↔ warm ink ↔ terracotta.
+       The terracotta is a sibling of the landing's wax-seal (#B83A2A);
+       slightly cooler here so it reads as "ink" on paper, not as a seal. */
+    --left:        #2C5274;
+    --left-soft:   #4A6F8E;
+    --center-ink:  #6B5F52;
+    --right:       #B0463A;
+    --right-soft:  #C46C5F;
+
+    /* Cross-link from landing for attention cues */
+    --seal:        #B83A2A;
+    --thread:      #2C5F5D;
+    --highlight:   #E8DCA0;
+
+    --display: "Newsreader", "Iowan Old Style", Georgia, serif;
+    --body:    "Newsreader", "Iowan Old Style", Georgia, serif;
+    --mono:    "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+
+    --max:    74rem;
+    --gutter: clamp(1.25rem, 4vw, 2.75rem);
+    --rule-w: 1px;
 }
 
-* { box-sizing: border-box; }
+*, *::before, *::after { box-sizing: border-box; }
+*::selection { background: var(--right); color: var(--paper-tint); }
 
-body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background: var(--bg);
-    color: var(--fg);
+html, body {
     margin: 0;
-    line-height: 1.5;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 17px;
+    line-height: 1.55;
+    font-feature-settings: "kern", "liga", "onum";
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
 }
+
+/* Paper grain — gentler than landing's; just enough to kill the flat-screen look */
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 100;
+    opacity: 0.35;
+    mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.08  0 0 0 0 0.07  0 0 0 0 0.06  0 0 0 0.035 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+
+a { color: var(--ink); text-decoration-color: var(--rule); text-underline-offset: 0.18em; text-decoration-thickness: 1px; }
+a:hover { color: var(--seal); text-decoration-color: var(--seal); }
+
+/* ----- shared registers ----- */
+
+.mono     { font-family: var(--mono); font-size: 0.78rem; letter-spacing: 0.02em; }
+.mono-tag { font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-3); }
+.tabnum   { font-variant-numeric: tabular-nums; }
+
+/* ============================================================
+   HEADER — dateline masthead
+   ============================================================ */
 
 header {
-    border-bottom: 1px solid var(--border);
-    padding: 1.5rem 2rem 1rem;
+    border-bottom: var(--rule-w) solid var(--rule);
+    background: var(--paper-tint);
 }
-header h1 { margin: 0 0 .25rem; }
-header h1 a {
-    color: var(--fg);
+
+/* Top strip — printer's-mark row in mono caps */
+header::before {
+    content: "";
+    display: block;
+    height: 0;
+}
+
+.masthead {
+    max-width: var(--max);
+    margin: 0 auto;
+    padding: 0.55rem var(--gutter);
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    border-bottom: var(--rule-w) solid var(--rule-soft);
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+}
+.masthead .right { display: flex; gap: 1.25rem; }
+.masthead .right .dot {
+    width: 6px; height: 6px;
+    background: var(--seal);
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 0.5rem;
+    vertical-align: 0.08em;
+}
+@media (max-width: 720px) {
+    .masthead .right span:nth-child(2) { display: none; }
+}
+
+/* Wordmark + nav row */
+.header-row {
+    max-width: var(--max);
+    margin: 0 auto;
+    padding: 1.5rem var(--gutter) 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 1.5rem;
+}
+
+header h1.brand { margin: 0; line-height: 1; }
+header h1.brand a {
+    color: var(--ink);
     text-decoration: none;
     display: inline-flex;
-    align-items: center;
-    gap: .65rem;
-}
-.brand-text {
-    /* Caveat (Google Fonts) — same brand font the previous spiritwriter site used */
-    font-family: 'Caveat', cursive;
-    font-size: 2.2rem;
-    letter-spacing: .5px;
-    line-height: 1;
+    align-items: baseline;
+    gap: 0.7rem;
 }
 .nav-logo {
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
     object-fit: contain;
+    transform: translateY(0.25rem);
+    opacity: 0.85;
 }
-.tagline { margin: 0 0 1rem; color: var(--muted); font-size: .9rem; }
+.brand-text {
+    font-family: var(--display);
+    font-style: italic;
+    font-variation-settings: "opsz" 72, "wght" 420;
+    font-size: clamp(2.2rem, 4.5vw, 3.2rem);
+    line-height: 0.95;
+    letter-spacing: -0.015em;
+    color: var(--ink);
+}
+.tagline {
+    margin: 0.45rem 0 0;
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+}
 
+nav {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
 nav a {
-    color: var(--accent);
+    color: var(--ink-2);
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
     text-decoration: none;
-    margin-right: 1.5rem;
-    font-size: .95rem;
+    transition: color 0.15s ease;
 }
-nav a:hover { text-decoration: underline; }
+nav a:hover { color: var(--seal); }
 
-main { padding: 1.5rem 2rem; max-width: 900px; margin: 0 auto; }
+@media (max-width: 720px) {
+    .header-row { flex-direction: column; align-items: flex-start; padding-bottom: 1rem; }
+    nav { flex-wrap: wrap; gap: 1.1rem; }
+}
 
-/* Date-range toolbar — sits above the slider for coarse time filtering */
+/* ============================================================
+   MAIN container
+   ============================================================ */
+
+main {
+    max-width: var(--max);
+    margin: 0 auto;
+    padding: 1.5rem var(--gutter) 3rem;
+}
+
+/* ============================================================
+   TOOLBAR — range buttons + sticky bias instrument
+   ============================================================ */
+
 .range-toolbar {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: .75rem;
-    padding: .75rem 0 .25rem;
+    gap: 0.65rem;
+    padding: 0.4rem 0 0.5rem;
 }
 .range-label {
-    font-size: .75rem;
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.18em;
     text-transform: uppercase;
-    letter-spacing: .08em;
-    color: var(--muted);
+    color: var(--ink-3);
 }
-.range-buttons {
-    display: inline-flex;
-    flex-wrap: wrap;
-    gap: .35rem;
-}
+.range-buttons { display: inline-flex; flex-wrap: wrap; gap: 0.25rem; }
 .range-btn {
-    background: var(--card);
-    color: var(--fg);
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    padding: .3rem .8rem;
-    font-size: .85rem;
+    background: transparent;
+    color: var(--ink-2);
+    border: 1px solid var(--rule);
+    padding: 0.25rem 0.7rem;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
     cursor: pointer;
-    font-family: inherit;
-    transition: background .15s, border-color .15s, color .15s;
+    border-radius: 2px;
+    transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
 }
-.range-btn:hover { border-color: var(--accent); color: var(--accent); }
+.range-btn:hover { border-color: var(--ink); color: var(--ink); }
 .range-btn.active {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: var(--bg);
-    font-weight: 600;
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--paper-tint);
+    font-weight: 500;
 }
 
-/* Snapshot stats — live counts/range/avg bias for the visible article set */
-.snapshot-stats {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1.25rem;
-    align-items: baseline;
-    padding: .5rem 0 1rem;
-    color: var(--muted);
-    font-size: .9rem;
-    border-bottom: 1px solid var(--border);
-}
-.snapshot-stats .stat-cell strong {
-    color: var(--fg);
-    font-variant-numeric: tabular-nums;
-    font-weight: 600;
-}
-.snapshot-stats .muted { color: var(--muted); margin-left: .25rem; }
+/* The instrument: sticky bias slider with tick-mark scale */
 
-/* Slider */
 .slider-bar {
     position: sticky;
     top: 0;
-    background: var(--bg);
-    padding: 1rem 0;
-    border-bottom: 1px solid var(--border);
-    z-index: 10;
+    z-index: 20;
+    background: var(--paper-tint);
+    border-top: var(--rule-w) solid var(--rule);
+    border-bottom: var(--rule-w) solid var(--rule);
+    margin: 0.85rem calc(-1 * var(--gutter)) 0;
+    padding: 0.95rem var(--gutter) 0.85rem;
+}
+.slider-instrument-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+}
+.slider-instrument-title {
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+}
+.slider-instrument-title em {
+    color: var(--seal);
+    font-style: normal;
+    font-weight: 500;
+}
+.slider-readout {
+    font-family: var(--display);
+    font-variation-settings: "opsz" 36, "wght" 480;
+    font-size: 1.55rem;
+    line-height: 1;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+}
+.slider-readout::before {
+    content: "";
+    display: inline-block;
+    width: 6px; height: 6px;
+    background: var(--seal);
+    border-radius: 50%;
+    margin-right: 0.5rem;
+    transform: translateY(-0.3em);
+}
+
+.slider-bar label {
+    display: block;
+    position: relative;
+    padding: 0 0 0.35rem;
+}
+
+/* Top half: gradient spectrum + tick marks (visual only, non-interactive).
+   Bottom half: ink rail with a chunky knob that physically slides — the
+   sole drag target, like an old car-dashboard HVAC slider. */
+
+.slider-gradient {
+    position: relative;
+    height: 18px;
+    background: linear-gradient(to right,
+        var(--left) 0%,
+        var(--left-soft) 20%,
+        #8C8378 50%,
+        var(--right-soft) 80%,
+        var(--right) 100%
+    );
+    border: 1px solid var(--ink);
+    border-radius: 2px 2px 0 0;
+    box-shadow: inset 0 1px 2px rgba(20,17,14,0.18);
+    pointer-events: none;
+}
+.slider-gradient .tick {
+    position: absolute;
+    top: 3px;
+    width: 1px;
+    height: 6px;
+    background: rgba(20,17,14,0.45);
+    transform: translateX(-50%);
+}
+.slider-gradient .tick.major {
+    top: 1px;
+    height: 16px;
+    width: 1px;
+    background: var(--ink);
+    opacity: 0.85;
+}
+
+/* The rail — ink groove with a chunky knob sliding in it.
+   We keep the native <input type=range> but style it to look like a slot. */
+.slider-rail-wrap {
+    position: relative;
+    height: 26px;
+    /* Carve a horizontal slot in the ink for the knob to ride in */
+    background:
+        linear-gradient(to bottom,
+            transparent 0,
+            transparent calc(50% - 4px),
+            #1A1612 calc(50% - 4px),
+            #1A1612 calc(50% + 4px),
+            transparent calc(50% + 4px),
+            transparent 100%);
+    border-left: 1px solid var(--ink);
+    border-right: 1px solid var(--ink);
+    border-bottom: 1px solid var(--ink);
+    border-radius: 0 0 2px 2px;
+    background-color: var(--paper-2);
+    box-shadow: inset 0 2px 3px rgba(20,17,14,0.10);
+}
+.slider-rail-wrap::before,
+.slider-rail-wrap::after {
+    /* End-caps on the slot — small ink dimples so it reads as a real groove */
+    content: "";
+    position: absolute;
+    top: 50%;
+    width: 4px; height: 4px;
+    background: var(--ink);
+    border-radius: 50%;
+    transform: translateY(-50%);
+}
+.slider-rail-wrap::before { left: 6px; }
+.slider-rail-wrap::after  { right: 6px; }
+
+.slider-axis-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 0.65rem;
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+}
+.slider-axis-labels .left  { color: var(--left); }
+.slider-axis-labels .right { color: var(--right); }
+
+/* The native input fills the rail wrap; thumb is the chunky knob */
+input#bias-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    margin: 0;
+    cursor: grab;
+}
+input#bias-slider:active { cursor: grabbing; }
+input#bias-slider:focus  { outline: none; }
+input#bias-slider:focus-visible ~ .slider-axis-labels { color: var(--seal); }
+
+/* The KNOB — a substantial physical control that slides in the slot.
+   Paper-faced with a chrome edge, center notch shows precise position. */
+input#bias-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 38px;
+    height: 22px;
+    background:
+        linear-gradient(to bottom,
+            var(--paper-tint) 0%,
+            var(--paper) 45%,
+            var(--paper-2) 100%);
+    border: 1.5px solid var(--ink);
+    border-radius: 3px;
+    cursor: grab;
+    box-shadow:
+        0 1px 0 var(--paper-tint) inset,
+        0 -1px 0 rgba(20,17,14,0.10) inset,
+        0 2px 4px rgba(20,17,14,0.25),
+        0 0 0 1px var(--paper-2);
+    transition: box-shadow 0.15s ease, transform 0.05s ease;
+    /* Center-notch indicator — a vertical hairline through the knob face */
+    background-image:
+        linear-gradient(to right,
+            transparent calc(50% - 0.5px),
+            var(--ink) calc(50% - 0.5px),
+            var(--ink) calc(50% + 0.5px),
+            transparent calc(50% + 0.5px)),
+        linear-gradient(to bottom,
+            var(--paper-tint) 0%,
+            var(--paper) 45%,
+            var(--paper-2) 100%);
+}
+input#bias-slider:hover::-webkit-slider-thumb {
+    box-shadow:
+        0 1px 0 var(--paper-tint) inset,
+        0 -1px 0 rgba(20,17,14,0.10) inset,
+        0 3px 6px rgba(20,17,14,0.30),
+        0 0 0 1px var(--seal);
+}
+input#bias-slider:active::-webkit-slider-thumb {
+    cursor: grabbing;
+    transform: translateY(0.5px);
+    box-shadow:
+        0 1px 0 var(--paper-tint) inset,
+        0 1px 3px rgba(20,17,14,0.30) inset,
+        0 1px 2px rgba(20,17,14,0.20),
+        0 0 0 1px var(--seal);
+}
+
+/* Firefox */
+input#bias-slider::-moz-range-track {
+    height: 100%;
+    background: transparent;
+    border: none;
+}
+input#bias-slider::-moz-range-thumb {
+    width: 38px;
+    height: 22px;
+    background:
+        linear-gradient(to right,
+            transparent calc(50% - 0.5px),
+            var(--ink) calc(50% - 0.5px),
+            var(--ink) calc(50% + 0.5px),
+            transparent calc(50% + 0.5px)),
+        linear-gradient(to bottom,
+            var(--paper-tint) 0%,
+            var(--paper) 45%,
+            var(--paper-2) 100%);
+    border: 1.5px solid var(--ink);
+    border-radius: 3px;
+    cursor: grab;
+    box-shadow:
+        0 2px 4px rgba(20,17,14,0.25),
+        0 0 0 1px var(--paper-2);
+}
+input#bias-slider:hover::-moz-range-thumb {
+    box-shadow:
+        0 3px 6px rgba(20,17,14,0.30),
+        0 0 0 1px var(--seal);
+}
+input#bias-slider:active::-moz-range-thumb { cursor: grabbing; }
+
+.slider-status {
+    margin: 0.85rem 0 0;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    color: var(--ink-3);
+}
+.slider-status strong {
+    color: var(--ink);
+    font-family: var(--display);
+    font-style: italic;
+    font-weight: 500;
+    font-size: 1rem;
+    letter-spacing: 0;
+}
+
+/* ============================================================
+   SNAPSHOT — count / range / avg row
+   ============================================================ */
+
+.snapshot-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.75rem;
+    align-items: baseline;
+    padding: 1rem 0 0.85rem;
+    color: var(--ink-3);
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    border-bottom: var(--rule-w) solid var(--rule-soft);
     margin-bottom: 1.5rem;
 }
-.slider-bar label {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
+.snapshot-stats .stat-cell { display: inline-flex; align-items: baseline; gap: 0.4rem; }
+.snapshot-stats .stat-cell strong {
+    color: var(--ink);
+    font-family: var(--display);
+    font-variation-settings: "opsz" 36, "wght" 480;
+    font-style: normal;
+    font-size: 1.35rem;
+    line-height: 1;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
 }
-.slider-bar input[type=range] {
-    flex: 1;
-    accent-color: var(--accent);
+.snapshot-stats .stat-cell::before {
+    content: "·";
+    color: var(--rule);
+    margin-right: 0.6rem;
+    font-size: 1rem;
 }
-.slider-bar span {
-    color: var(--muted);
-    font-size: .9rem;
-    min-width: 3rem;
-}
-.slider-bar span:first-of-type { color: var(--left); text-align: right; }
-.slider-bar span:last-of-type { color: var(--right); }
-.slider-status { color: var(--muted); font-size: .85rem; margin: .5rem 0 0; text-align: center; }
+.snapshot-stats .stat-cell:first-child::before { content: none; }
+.snapshot-stats .muted { color: var(--ink-4); }
 
-/* Article cards
- * The card carries inline CSS custom properties (--bias-r/g/b) per article
- * — see AnalyzedArticle.bias_tint_inline. Border + background tint derive
- * from those variables so visual weight tracks the bias score. */
-.articles { display: flex; flex-direction: column; gap: 1.25rem; }
+/* ============================================================
+   ARTICLE CARDS — list, ledger-row feel
+   ============================================================ */
+
+.articles {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    border-top: var(--rule-w) solid var(--rule-soft);
+}
+
 .card {
-    /* Defaults if --bias-r/g/b aren't set (article page placeholder etc.) */
-    --bias-r: 140; --bias-g: 140; --bias-b: 140;
+    /* Bias RGB falls back to muted ink if the inline custom props are absent */
+    --bias-r: 107; --bias-g: 95; --bias-b: 82;
 
-    background:
-        /* Tint slab on the left side that fades to transparent ~60% across */
-        linear-gradient(
-            to right,
-            rgba(var(--bias-r), var(--bias-g), var(--bias-b), 0.18),
-            rgba(var(--bias-r), var(--bias-g), var(--bias-b), 0.08) 40%,
-            transparent 60%
-        ),
-        var(--card);
-    border: 1px solid var(--border);
-    border-left: 8px solid rgb(var(--bias-r), var(--bias-g), var(--bias-b));
-    border-radius: 8px;
-    padding: 1.25rem;
+    position: relative;
+    border-bottom: var(--rule-w) solid var(--rule-soft);
+    background: transparent;
+    perspective: 1400px;
+    /* padding is on the faces, not the card itself, so the flipper can take
+       the full card-area and the back can absolute-position over the front. */
 }
-.card h2 { margin: .5rem 0; font-size: 1.2rem; line-height: 1.35; }
-.meta {
-    margin: 0 0 .5rem;
+.card-flipper {
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.7s cubic-bezier(0.3, 0.85, 0.4, 1);
+}
+.card.is-flipped .card-flipper { transform: rotateY(180deg); }
+
+.card-face {
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    padding: 1.6rem 1.4rem 1.5rem 1.6rem;
+    position: relative;
+}
+.card-front { background: transparent; }
+.card-back {
+    position: absolute;
+    inset: 0;
+    transform: rotateY(180deg);
+    background: var(--paper-tint);
+    overflow-y: auto;
+}
+
+/* The bias-tinted left edge — applied to whichever face is currently
+   showing, so it doesn't get rotated into the wrong side */
+.card-front::before, .card-back::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: rgb(var(--bias-r), var(--bias-g), var(--bias-b));
+    opacity: 0.85;
+}
+
+.card:hover:not(.is-flipped) .card-front {
+    background: rgba(var(--bias-r), var(--bias-g), var(--bias-b), 0.045);
+}
+
+/* The flip trigger — crystal+helix icon, top-right of card, stays in
+   place across both faces (lives OUTSIDE the flipper). */
+.card-flip-trigger {
+    position: absolute;
+    top: 1.05rem;
+    right: 1.1rem;
+    z-index: 5;
+    width: 28px;
+    height: 32px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--ink-3);
+    transition: color 0.2s ease, transform 0.25s ease;
+}
+.card-flip-trigger .shard-icon {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+.card-flip-trigger:hover {
+    color: var(--seal);
+    transform: scale(1.1);
+}
+.card-flip-trigger:focus-visible {
+    outline: 2px solid var(--seal);
+    outline-offset: 4px;
+    border-radius: 2px;
+}
+.card.is-flipped .card-flip-trigger {
+    color: var(--seal);
+    transform: rotate(180deg);
+}
+.card.is-flipped .card-flip-trigger:hover {
+    transform: rotate(180deg) scale(1.1);
+}
+
+/* SHARD INSPECTOR back face ----------------------------------------- */
+
+.card-back .back-header {
     display: flex;
-    flex-wrap: wrap;
-    gap: .75rem;
-    font-size: .85rem;
-    color: var(--muted);
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+    margin: 0 2.5rem 1.2rem 0;     /* leave room for the flip trigger */
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid var(--rule);
+}
+.card-back .back-label {
+    font-family: var(--display);
+    font-style: italic;
+    font-variation-settings: "opsz" 36, "wght" 420;
+    font-size: 1.15rem;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+}
+.card-back .back-context {
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-3);
 }
 
-/* Dual-marker bias chart — Source (●, below bar) + Current (▼, above bar)
- * with a one-line legend below explaining each. JS moves the current marker
- * + updates the legend text on slider input. */
-.bias-chart {
-    margin: 0 0 .85rem;
-    padding-top: .6rem;     /* room for the Current ▼ above the bar */
-    padding-bottom: .55rem; /* room for the Source ● below the bar */
+.shard-spec {
+    margin: 0;
+    display: grid;
+    grid-template-columns: 5rem 1fr;
+    column-gap: 1.1rem;
+    row-gap: 0.55rem;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    line-height: 1.45;
 }
-.bias-chart .bias-bar { display: block; width: 100%; max-width: 360px; }
+.shard-spec dt {
+    font-size: 0.62rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    padding-top: 0.1rem;
+}
+.shard-spec dd {
+    margin: 0;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    word-break: break-all;
+}
+.shard-spec dd .muted { color: var(--ink-4); font-style: normal; }
+.shard-spec .hash {
+    color: var(--ink);
+    background: var(--paper-2);
+    padding: 0.1rem 0.4rem;
+    border: 1px solid var(--rule-faint);
+    border-radius: 2px;
+    font-size: 0.72rem;
+}
+.shard-spec .hash-tail { color: var(--ink-4); margin-left: 0.1rem; }
 
-.bias-legend {
-    margin: .35rem 0 0;
-    font-size: .8rem;
-    color: var(--muted);
-    display: flex;
-    flex-wrap: wrap;
-    gap: .5rem;
-    align-items: center;
+.shard-spec .atom-summary { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+.shard-spec .atom-kind {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.25rem;
+    color: var(--ink-2);
 }
-.legend-item { display: inline-flex; align-items: center; gap: .35rem; }
-.legend-divider { color: var(--border); }
-.legend-source-value, .legend-current-value {
-    color: var(--fg);
+.shard-spec .atom-kind strong {
+    color: var(--seal);
     font-weight: 600;
     font-variant-numeric: tabular-nums;
 }
-.legend-marker {
-    display: inline-block;
-    width: 10px; height: 10px;
+
+.shard-spec .tag-list { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.shard-spec .tag {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.04em;
+    color: var(--ink);
+    background: var(--paper);
+    border: 1px solid var(--rule-soft);
+    padding: 0.1rem 0.45rem;
+    border-radius: 2px;
 }
+
+/* Info bubble next to the SHARD hash — small (i) trigger reveals a
+   popover explaining content-addressed shards. Hover (desktop) or
+   focus (keyboard tab) brings it up. */
+.info-popover {
+    position: relative;
+    display: inline-block;
+    margin-left: 0.45rem;
+    vertical-align: middle;
+}
+.info-trigger {
+    width: 16px; height: 16px;
+    padding: 0;
+    background: var(--paper-2);
+    color: var(--ink-3);
+    border: 1px solid var(--rule);
+    border-radius: 50%;
+    font-family: var(--display);
+    font-style: italic;
+    font-size: 11px;
+    line-height: 1;
+    cursor: help;
+    transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+.info-trigger:hover, .info-trigger:focus-visible {
+    color: var(--paper-tint);
+    background: var(--seal);
+    border-color: var(--seal);
+    outline: none;
+}
+.info-bubble {
+    position: absolute;
+    top: calc(100% + 0.4rem);
+    left: 0;
+    z-index: 10;
+    width: 18rem;
+    max-width: 80vw;
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(-4px);
+    transition: opacity 0.18s ease, transform 0.18s ease, visibility 0s linear 0.18s;
+    background: var(--ink);
+    color: var(--paper);
+    padding: 0.75rem 0.85rem;
+    font-family: var(--body);
+    font-size: 0.82rem;
+    line-height: 1.45;
+    border-radius: 3px;
+    box-shadow: 0 6px 18px rgba(20, 17, 14, 0.32);
+    pointer-events: none;
+}
+.info-bubble::before {
+    /* Small ink notch pointing up at the trigger */
+    content: "";
+    position: absolute;
+    top: -5px;
+    left: 4px;
+    width: 8px; height: 8px;
+    background: var(--ink);
+    transform: rotate(45deg);
+}
+.info-bubble a {
+    color: var(--paper-tint);
+    border-bottom: 1px solid rgba(244, 241, 234, 0.45);
+    text-decoration: none;
+    padding-bottom: 0.05rem;
+    margin-left: 0.25rem;
+    pointer-events: auto;
+}
+.info-bubble a:hover { color: var(--highlight); border-bottom-color: var(--highlight); }
+.info-popover:hover .info-bubble,
+.info-popover:focus-within .info-bubble {
+    visibility: visible;
+    opacity: 1;
+    transform: translateY(0);
+    transition-delay: 0s;
+    pointer-events: auto;
+}
+
+/* Reduce-motion fallback — instant swap instead of 3D flip */
+@media (prefers-reduced-motion: reduce) {
+    .card-flipper { transition: none; }
+    .card.is-flipped .card-flipper { transform: none; }
+    .card-back { display: none; }
+    .card.is-flipped .card-front { display: none; }
+    .card.is-flipped .card-back { display: block; position: relative; transform: none; }
+}
+
+/* Top meta row — source dateline. Reserves right-side gutter for the
+   absolutely-positioned crystal+helix flip-trigger above. */
+.card .meta {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin: 0 3rem 0.85rem 0;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--rule-faint);
+}
+.card .meta .source {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink);
+    font-weight: 500;
+    text-decoration: none;
+}
+.card .meta a.source {
+    border-bottom: 1px solid var(--rule-soft);
+    padding-bottom: 0.1rem;
+    transition: color 0.12s ease, border-bottom-color 0.12s ease;
+}
+.card .meta a.source:hover {
+    color: var(--seal);
+    border-bottom-color: var(--seal);
+}
+.card .meta .date {
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.12em;
+    color: var(--ink-3);
+    margin-left: 0.75rem;
+}
+/* Bias chart — tick-marked horizontal bar w/ source + current markers */
+.bias-chart {
+    margin: 0 0 1rem;
+    padding-top: 0.7rem;      /* room for ▼ above */
+    padding-bottom: 0.7rem;   /* room for ● below */
+}
+.bias-bar {
+    position: relative;
+    display: block;
+    width: 100%;
+    max-width: 340px;
+    height: 4px;
+    background: linear-gradient(to right,
+        var(--left) 0%, var(--center-ink) 50%, var(--right) 100%);
+    border-radius: 0;
+}
+.bias-bar.bias-bar-lg { max-width: 480px; height: 5px; }
+
+/* Tick marks etched into the bar */
+.bias-bar::after {
+    content: "";
+    position: absolute;
+    inset: -3px 0 -3px 0;
+    background-image: linear-gradient(to right,
+        rgba(20,17,14,0.55) 0, rgba(20,17,14,0.55) 1px,
+        transparent 1px, transparent 10%);
+    background-size: 100% 100%;
+    background-repeat: repeat-x;
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+.bias-bar-marker {
+    position: absolute;
+    transform: translateX(-50%);
+}
+.bias-bar-marker-source {
+    top: 100%;
+    margin-top: 4px;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: rgb(var(--bias-r), var(--bias-g), var(--bias-b));
+    box-shadow: 0 0 0 1.5px var(--paper);
+    transition: left 0.25s ease;
+}
+.bias-bar-marker-current {
+    bottom: 100%;
+    margin-bottom: 4px;
+    width: 0; height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 7px solid var(--ink);
+    background: transparent;
+    transition: left 0.25s ease;
+}
+
+.bias-legend {
+    margin: 0.7rem 0 0;
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.06em;
+    color: var(--ink-3);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    align-items: center;
+}
+.legend-item { display: inline-flex; align-items: center; gap: 0.35rem; }
+.legend-divider { color: var(--rule); }
+.legend-source-value, .legend-current-value {
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+}
+.legend-marker { display: inline-block; width: 9px; height: 9px; }
 .legend-marker-source {
     border-radius: 50%;
     background: rgb(var(--bias-r), var(--bias-g), var(--bias-b));
-    box-shadow: 0 0 0 1px var(--bg);
+    box-shadow: 0 0 0 1px var(--paper);
 }
 .legend-marker-current {
     width: 0; height: 0;
-    border-left: 6px solid transparent;
-    border-right: 6px solid transparent;
-    border-top: 8px solid var(--fg);
-}
-.source { font-weight: 600; color: var(--fg); }
-.source-link a {
-    color: var(--accent);
-    font-size: .85rem;
-    text-decoration: none;
-}
-.source-link a:hover { text-decoration: underline; }
-
-.bias-badge {
-    padding: .1rem .5rem;
-    border-radius: 999px;
-    font-size: .75rem;
-    border: 1px solid var(--border);
-}
-.bias-left, .bias-badge.bias-left { color: var(--left); border-color: var(--left); }
-.bias-center-left { color: #6fa8dc; }
-.bias-center, .bias-badge.bias-center { color: var(--center); }
-.bias-center-right { color: #e0a58e; }
-.bias-right, .bias-badge.bias-right { color: var(--right); border-color: var(--right); }
-
-/* Per-card bias bar — small inline gradient with a marker at the article's
- * bias score. Sits in the .meta line so it reads alongside the source/date. */
-.bias-bar {
-    position: relative;
-    display: inline-block;
-    width: 120px;
-    height: 8px;
-    background: linear-gradient(to right, var(--left), #7c8a9c 50%, var(--right));
-    border-radius: 4px;
-    vertical-align: middle;
-}
-.bias-bar.bias-bar-lg { width: 220px; height: 10px; }
-.bias-bar-marker {
-    position: absolute;
-    top: -3px;
-    width: 4px;
-    height: calc(100% + 6px);
-    background: var(--fg);
-    box-shadow: 0 0 0 1px var(--bg);
-    transform: translateX(-50%);
-    border-radius: 2px;
-}
-/* Source marker: colored dot BELOW the bar */
-.bias-bar-marker-source {
-    top: 100%;
-    margin-top: 2px;
-    width: 10px; height: 10px;
-    border-radius: 50%;
-    background: rgb(var(--bias-r), var(--bias-g), var(--bias-b));
-    box-shadow: 0 0 0 1px var(--bg);
-    transition: left .25s ease;
-}
-/* Current marker: triangle ABOVE the bar */
-.bias-bar-marker-current {
-    top: auto;
-    bottom: 100%;
-    margin-bottom: 2px;
-    width: 0; height: 0;
-    background: transparent;
-    box-shadow: none;
-    border-left: 6px solid transparent;
-    border-right: 6px solid transparent;
-    border-top: 8px solid var(--fg);
-    border-radius: 0;
-    transition: left .25s ease;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 7px solid var(--ink);
 }
 
-/* Variants */
+/* Variant text (headline + summary) */
+.variant h2 {
+    font-family: var(--display);
+    font-variation-settings: "opsz" 36, "wght" 450;
+    font-size: 1.5rem;
+    line-height: 1.18;
+    letter-spacing: -0.012em;
+    margin: 0.25rem 0 0.55rem;
+    color: var(--ink);
+    font-weight: 450;
+}
+.variant p {
+    margin: 0 0 0.5rem;
+    font-family: var(--body);
+    font-size: 1rem;
+    line-height: 1.55;
+    color: var(--ink-2);
+}
+
 .variant[hidden] { display: none; }
 .card.filter-hidden { display: none; }
 
-/* Per-article permalink page — show all 3 variants stacked */
+.source-link {
+    margin: 0.9rem 0 0;
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+}
+.source-link a {
+    color: var(--ink);
+    text-decoration: none;
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 0.15rem;
+    margin-right: 1rem;
+}
+.source-link a:hover { color: var(--seal); border-bottom-color: var(--seal); }
+
+/* Empty-state placeholder */
+.card.empty-state {
+    text-align: center;
+    padding: 3rem 1.5rem;
+    color: var(--ink-3);
+    border-bottom: var(--rule-w) solid var(--rule);
+}
+.card.empty-state::before { content: none; }
+.card.empty-state h2 {
+    color: var(--ink);
+    font-family: var(--display);
+    font-style: italic;
+    font-variation-settings: "opsz" 60, "wght" 380;
+    font-size: 1.6rem;
+    margin: 0 0 0.6rem;
+}
+
+/* ============================================================
+   ARTICLE PERMALINK PAGE
+   ============================================================ */
+
 .article-detail .variant-block {
-    border-top: 1px solid var(--border);
-    padding-top: 1.25rem;
-    margin-top: 1.5rem;
+    border-top: 1px solid var(--rule-soft);
+    padding-top: 1.4rem;
+    margin-top: 1.6rem;
 }
 .article-detail .variant-block:first-of-type {
     border-top: none;
     padding-top: 0;
-    margin-top: 1rem;
+    margin-top: 0.5rem;
 }
 .article-detail .variant-heading {
-    margin: 0 0 .35rem;
-    font-size: .75rem;
+    margin: 0 0 0.5rem;
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.18em;
     text-transform: uppercase;
-    letter-spacing: .08em;
-    color: var(--muted);
-    font-weight: 600;
+    color: var(--ink-3);
+    font-weight: 500;
+}
+.article-detail .variant-heading.bias-left  { color: var(--left); }
+.article-detail .variant-heading.bias-right { color: var(--right); }
+.article-detail h2 {
+    font-family: var(--display);
+    font-variation-settings: "opsz" 72, "wght" 460;
+    font-size: 1.85rem;
+    line-height: 1.15;
+    margin: 0.3rem 0 0.6rem;
+    letter-spacing: -0.014em;
+}
+.article-back { margin-top: 2rem; font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.16em; text-transform: uppercase; }
+.article-back a { color: var(--ink); text-decoration: none; border-bottom: 1px solid var(--rule); padding-bottom: 0.15rem; }
+.article-back a:hover { color: var(--seal); border-bottom-color: var(--seal); }
+
+/* ============================================================
+   SOURCE PAGE
+   ============================================================ */
+
+.source-header { margin: 0.5rem 0 2rem; }
+.breadcrumb {
+    margin: 0 0 0.85rem;
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+}
+.breadcrumb a { color: var(--ink-3); text-decoration: none; border-bottom: 1px solid var(--rule-soft); padding-bottom: 0.1rem; }
+.breadcrumb a:hover { color: var(--seal); border-bottom-color: var(--seal); }
+.source-header h2 {
+    margin: 0 0 0.55rem;
+    font-family: var(--display);
+    font-variation-settings: "opsz" 96, "wght" 420;
+    font-style: italic;
+    font-size: clamp(2rem, 4.5vw, 3rem);
+    line-height: 1.05;
+    letter-spacing: -0.018em;
+    color: var(--ink);
+}
+.source-header .lead {
+    margin: 0;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    color: var(--ink-3);
+}
+.source-header .lead strong {
+    color: var(--ink);
+    font-family: var(--display);
+    font-style: normal;
+    font-variation-settings: "opsz" 36, "wght" 480;
+    font-size: 1.1rem;
+    font-variant-numeric: tabular-nums;
+    margin: 0 0.25rem;
 }
 
-/* "Back to all news" link on the per-article permalink page */
-.article-back { margin-top: 1.5rem; }
-.article-back a { color: var(--accent); text-decoration: none; }
-.article-back a:hover { text-decoration: underline; }
+.bias-over-time { margin: 0 0 2rem; }
+.bias-over-time h3 {
+    margin: 1.5rem 0 0.5rem;
+    font-family: var(--display);
+    font-style: italic;
+    font-variation-settings: "opsz" 36, "wght" 380;
+    font-size: 1.3rem;
+    color: var(--ink);
+    font-weight: 380;
+}
+.bias-over-time .muted {
+    margin: 0 0 1rem;
+    font-size: 0.92rem;
+    color: var(--ink-3);
+    max-width: 56ch;
+}
 
-/* Per-source page header — breadcrumb, big source name, lifetime stats */
-.source-header { margin-bottom: 1.5rem; }
-.source-header h2 { margin: .5rem 0; font-size: 1.6rem; }
-.source-header .lead { margin: 0; font-size: .95rem; }
-.breadcrumb { margin: 0 0 .5rem; font-size: .85rem; }
-.breadcrumb a { color: var(--accent); text-decoration: none; }
-.breadcrumb a:hover { text-decoration: underline; }
-
-/* Bias-over-time table on source pages */
-.bias-over-time { margin: 0 0 1.5rem; }
-.bias-over-time h3 { margin: .5rem 0; font-size: 1.05rem; }
-.bias-over-time .muted { margin: 0 0 .75rem; font-size: .85rem; }
-
-/* Sparkline — inline SVG of monthly mean bias on per-source pages */
 .sparkline-container {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: .5rem;
-    margin: 0 0 1.25rem;
+    background: var(--paper-tint);
+    border: var(--rule-w) solid var(--rule-soft);
+    padding: 0.85rem 1rem 0.65rem;
+    margin: 0 0 1.5rem;
     max-width: 620px;
 }
-.sparkline-container .bias-sparkline {
-    display: block;
-    width: 100%;
-    height: auto;
-}
+.sparkline-container .bias-sparkline { display: block; width: 100%; height: auto; }
 .sparkline-axis {
     display: flex;
     justify-content: space-between;
-    font-size: .7rem;
+    margin-top: 0.55rem;
+    padding: 0 0.4rem;
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.18em;
     text-transform: uppercase;
-    letter-spacing: .08em;
-    margin-top: .65rem;
-    padding: 0 .5rem;
-    color: var(--muted);
+    color: var(--ink-3);
 }
 .sparkline-axis-end.bias-left  { color: var(--left); }
 .sparkline-axis-end.bias-right { color: var(--right); }
 
-/* Make linked source names in analytics table look like links */
-.source-stats td.source-name a {
-    color: var(--accent);
-    text-decoration: none;
+/* ============================================================
+   ANALYTICS PAGE
+   ============================================================ */
+
+.analytics > h2 {
+    margin: 0.5rem 0 0.4rem;
+    font-family: var(--display);
+    font-style: italic;
+    font-variation-settings: "opsz" 96, "wght" 400;
+    font-size: clamp(2.1rem, 4.5vw, 3rem);
+    line-height: 1.05;
+    letter-spacing: -0.018em;
+    font-weight: 400;
 }
-.source-stats td.source-name a:hover { text-decoration: underline; }
+.analytics > h3 {
+    margin: 2.5rem 0 1rem;
+    font-family: var(--display);
+    font-style: italic;
+    font-variation-settings: "opsz" 36, "wght" 380;
+    font-size: 1.35rem;
+    line-height: 1.2;
+    color: var(--ink);
+    font-weight: 380;
+    border-bottom: var(--rule-w) solid var(--rule-soft);
+    padding-bottom: 0.45rem;
+}
+.analytics .muted, .analytics .lead {
+    color: var(--ink-3);
+    max-width: 64ch;
+}
+.analytics .lead { margin: 0.5rem 0 1.25rem; }
 
-/* Empty-state placeholder when ingest hasn't completed yet */
-.card.empty-state { text-align: center; padding: 2.5rem 1.25rem; color: var(--muted); }
-.card.empty-state h2 { color: var(--fg); }
-
-/* Analytics — section spacing */
-.analytics > h2 { margin: 0 0 1.5rem; }
-.analytics > h3 { margin: 2rem 0 1rem; font-size: 1.05rem; }
-.analytics .muted { color: var(--muted); }
-
-/* Top-of-page big stat cards */
+/* Top stat cards — austere boxes, big tabular numbers */
 .stat-cards {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 1rem;
-    margin-bottom: 1.5rem;
+    gap: 0;
+    margin: 1.5rem 0 2rem;
+    border-top: var(--rule-w) solid var(--rule);
+    border-bottom: var(--rule-w) solid var(--rule);
 }
 .stat-card {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 1.5rem 1rem;
-    text-align: center;
+    padding: 1.4rem 1.2rem;
+    border-right: 1px solid var(--rule-soft);
+    text-align: left;
 }
+.stat-card:last-child { border-right: none; }
 .stat-num {
+    font-family: var(--display);
+    font-variation-settings: "opsz" 96, "wght" 480;
     font-size: 2.4rem;
-    font-weight: 700;
-    color: var(--accent);
     line-height: 1;
+    color: var(--ink);
+    font-weight: 480;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
 }
-.stat-label { color: var(--muted); margin-top: .4rem; font-size: .9rem; }
+.stat-label {
+    margin-top: 0.5rem;
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+}
 
-/* Three-bucket bias distribution */
+/* Three-bucket distribution */
 .bias-distribution {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 1rem;
-    margin-bottom: 1rem;
+    gap: 0;
+    margin: 0 0 1.5rem;
+    border-top: var(--rule-w) solid var(--rule-soft);
+    border-bottom: var(--rule-w) solid var(--rule-soft);
 }
 .bias-bucket {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 1rem;
+    padding: 1.1rem 1rem;
+    border-right: 1px solid var(--rule-faint);
 }
-.bucket-num { font-size: 1.8rem; font-weight: 700; line-height: 1; }
-.bucket-label { color: var(--muted); font-size: .85rem; margin: .35rem 0 .6rem; }
-.bucket-range { font-variant-numeric: tabular-nums; }
+.bias-bucket:last-child { border-right: none; }
+.bucket-num {
+    font-family: var(--display);
+    font-variation-settings: "opsz" 60, "wght" 480;
+    font-size: 1.8rem;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+}
+.bucket-num.bias-left   { color: var(--left); }
+.bucket-num.bias-center { color: var(--center-ink); }
+.bucket-num.bias-right  { color: var(--right); }
+.bucket-label {
+    margin: 0.35rem 0 0.65rem;
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+}
+.bucket-range { color: var(--ink-4); }
 .bucket-progress {
-    height: 6px;
-    background: var(--border);
-    border-radius: 3px;
+    height: 4px;
+    background: var(--rule-faint);
     overflow: hidden;
 }
-.bucket-progress-bar { height: 100%; transition: width .3s; }
+.bucket-progress-bar { height: 100%; transition: width 0.3s; }
 .bucket-progress-bar.bias-left   { background: var(--left); }
-.bucket-progress-bar.bias-center { background: var(--center); }
+.bucket-progress-bar.bias-center { background: var(--center-ink); }
 .bucket-progress-bar.bias-right  { background: var(--right); }
-.bucket-pct { color: var(--muted); font-size: .8rem; margin-top: .35rem; text-align: right; font-variant-numeric: tabular-nums; }
+.bucket-pct {
+    margin-top: 0.35rem;
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    color: var(--ink-3);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
 
-/* Side-by-side leaning-sources */
+/* Side-by-side leaning tables */
 .leaning-sources {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 1.25rem;
+    gap: 2rem;
+    margin-bottom: 1.5rem;
 }
-.leaning-half h3 { margin-top: .5rem; }
-
-/* Center alignment for the leaning-sources tables (per user feedback) */
+.leaning-half h3 {
+    margin: 0.5rem 0 0.75rem;
+    font-family: var(--display);
+    font-style: italic;
+    font-variation-settings: "opsz" 36, "wght" 380;
+    font-size: 1.15rem;
+    font-weight: 380;
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 0.45rem;
+}
+.leaning-half h3.bias-left  { color: var(--left); border-bottom-color: var(--left-soft); }
+.leaning-half h3.bias-right { color: var(--right); border-bottom-color: var(--right-soft); }
 .leaning-sources .source-stats td.num,
 .leaning-sources .source-stats th { text-align: center; }
 .leaning-sources .source-stats td.source-name,
 .leaning-sources .source-stats th:first-child { text-align: left; }
 
-/* Per-category bias scale — diluted gradient (no opacity on parent so the
- * marker stays fully opaque) with a high-contrast white marker. */
+/* Per-category bias scale (and reused in source's monthly drift table) */
 .cat-scale {
     position: relative;
     width: 200px;
-    height: 1rem;
+    height: 0.85rem;
     background: linear-gradient(to right,
-        rgba(79, 140, 201, .5) 0%,
-        rgba(181, 194, 207, .35) 50%,
-        rgba(217, 100, 88, .5) 100%);
-    border: 1px solid var(--border);
-    border-radius: 4px;
+        rgba(44, 82, 116, 0.30) 0%,
+        rgba(107, 95, 82, 0.18) 50%,
+        rgba(176, 70, 58, 0.30) 100%);
+    border: 1px solid var(--rule-soft);
 }
 .cat-scale-marker {
     position: absolute;
     top: -3px;
-    width: 6px;
+    width: 4px;
     height: calc(100% + 6px);
-    background: var(--fg);
-    box-shadow: 0 0 0 1px var(--bg);  /* outline so it pops on any backdrop */
+    background: var(--ink);
     transform: translateX(-50%);
-    border-radius: 3px;
 }
 
-/* Filter search above the all-sources table */
 .source-filter {
     display: flex;
     align-items: center;
-    gap: .75rem;
-    margin-bottom: .75rem;
+    gap: 0.8rem;
+    margin: 0.5rem 0 0.85rem;
 }
 .source-filter input[type="text"] {
     flex: 1;
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: .5rem .75rem;
-    color: var(--fg);
-    font-size: .95rem;
+    background: var(--paper-tint);
+    border: 1px solid var(--rule);
+    padding: 0.5rem 0.75rem;
+    color: var(--ink);
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    border-radius: 0;
+    transition: border-color 0.15s ease;
 }
-.source-filter input[type="text"]:focus {
-    outline: none;
-    border-color: var(--accent);
-}
+.source-filter input[type="text"]:focus { outline: none; border-color: var(--ink); }
 .source-filter .filter-count {
-    color: var(--muted);
-    font-size: .85rem;
+    color: var(--ink-3);
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
     font-variant-numeric: tabular-nums;
 }
 
-@media (max-width: 700px) {
-    .stat-cards, .bias-distribution, .leaning-sources {
-        grid-template-columns: 1fr;
-    }
-}
-
-/* Analytics table */
-.analytics .lead { color: var(--muted); margin-bottom: 1.5rem; }
+/* Tables */
 .source-stats {
     width: 100%;
     border-collapse: collapse;
-    font-size: .9rem;
+    font-size: 0.95rem;
 }
 .source-stats th, .source-stats td {
-    padding: .5rem .75rem;
-    border-bottom: 1px solid var(--border);
+    padding: 0.6rem 0.75rem;
+    border-bottom: 1px solid var(--rule-faint);
     text-align: left;
+    vertical-align: middle;
 }
-.source-stats th { color: var(--muted); font-weight: 600; }
-.source-stats td.num { font-variant-numeric: tabular-nums; text-align: right; }
-.source-stats td.date { color: var(--muted); font-size: .85rem; }
-.source-name { font-weight: 600; }
+.source-stats th {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    font-weight: 500;
+    background: transparent;
+    border-bottom: 1px solid var(--rule);
+}
+.source-stats td.num {
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    font-family: var(--mono);
+    font-size: 0.85rem;
+}
+.source-stats td.date {
+    color: var(--ink-3);
+    font-family: var(--mono);
+    font-size: 0.78rem;
+}
+.source-name { font-weight: 500; color: var(--ink); }
+.source-stats td.source-name a {
+    color: var(--ink);
+    text-decoration: none;
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 0.1rem;
+}
+.source-stats td.source-name a:hover { color: var(--seal); border-bottom-color: var(--seal); }
 
+/* Bias badges (used as inline pills) */
+.bias-badge {
+    padding: 0.12rem 0.45rem;
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    border: 1px solid currentColor;
+    border-radius: 0;
+    font-variant-numeric: tabular-nums;
+    display: inline-block;
+}
+.bias-left, .bias-badge.bias-left { color: var(--left); }
+.bias-center-left { color: var(--left-soft); }
+.bias-center, .bias-badge.bias-center { color: var(--center-ink); }
+.bias-center-right { color: var(--right-soft); }
+.bias-right, .bias-badge.bias-right { color: var(--right); }
+
+/* Per-source histogram bars */
 .histogram {
     display: flex;
     gap: 1px;
     min-width: 180px;
-    height: 1.4rem;
+    height: 1.3rem;
     align-items: stretch;
 }
 .histogram .bar {
-    background: var(--border);
-    color: var(--fg);
-    font-size: .7rem;
+    background: var(--rule-soft);
+    color: var(--paper-tint);
+    font-family: var(--mono);
+    font-size: 0.62rem;
     text-align: center;
-    line-height: 1.4rem;
-    padding: 0 .25rem;
+    line-height: 1.3rem;
+    padding: 0 0.25rem;
     overflow: hidden;
+    font-variant-numeric: tabular-nums;
 }
-.histogram .bar.bias-left { background: var(--left); }
-.histogram .bar.bias-center-left { background: #4f7da8; }
-.histogram .bar.bias-center { background: #7a8794; color: var(--bg); }
-.histogram .bar.bias-center-right { background: #b07a6a; }
-.histogram .bar.bias-right { background: var(--right); }
+.histogram .bar.bias-left         { background: var(--left); }
+.histogram .bar.bias-center-left  { background: var(--left-soft); }
+.histogram .bar.bias-center       { background: var(--center-ink); }
+.histogram .bar.bias-center-right { background: var(--right-soft); }
+.histogram .bar.bias-right        { background: var(--right); }
+
+@media (max-width: 720px) {
+    .stat-cards, .bias-distribution, .leaning-sources { grid-template-columns: 1fr; }
+    .stat-card, .bias-bucket { border-right: none; border-bottom: 1px solid var(--rule-soft); }
+    .stat-card:last-child, .bias-bucket:last-child { border-bottom: none; }
+}
+
+/* ============================================================
+   ABOUT page
+   ============================================================ */
+
+.about { max-width: 64ch; margin: 0 auto; }
+.about h2 {
+    margin: 0.5rem 0 0.4rem;
+    font-family: var(--display);
+    font-style: italic;
+    font-variation-settings: "opsz" 96, "wght" 400;
+    font-size: clamp(2rem, 4.5vw, 2.8rem);
+    letter-spacing: -0.018em;
+    font-weight: 400;
+}
+.about h3 {
+    margin: 2.5rem 0 0.85rem;
+    font-family: var(--display);
+    font-style: italic;
+    font-variation-settings: "opsz" 36, "wght" 380;
+    font-size: 1.25rem;
+    color: var(--ink);
+    font-weight: 380;
+    border-bottom: 1px solid var(--rule-soft);
+    padding-bottom: 0.4rem;
+}
+.about p {
+    margin: 0.75rem 0;
+    line-height: 1.7;
+    font-size: 1.02rem;
+    color: var(--ink-2);
+}
+.about ul, .about dl { margin: 0.75rem 0 0.75rem 1.4rem; line-height: 1.7; }
+.about li { margin: 0.3rem 0; }
+.about code {
+    background: var(--paper-2);
+    border: 1px solid var(--rule-faint);
+    padding: 0.05rem 0.4rem;
+    font-family: var(--mono);
+    font-size: 0.88em;
+    border-radius: 0;
+}
+.about pre {
+    background: var(--paper-2);
+    border: 1px solid var(--rule-soft);
+    border-left: 3px solid var(--seal);
+    padding: 1rem 1.25rem;
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    line-height: 1.55;
+    border-radius: 0;
+}
+.about pre code { background: transparent; border: 0; padding: 0; font-size: inherit; }
+.about .example-label {
+    margin: 1.25rem 0 0.4rem;
+    color: var(--ink-3);
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+}
+.about .example-label + pre { margin-top: 0; }
+.about .example-label strong { color: var(--ink); font-weight: 500; }
+.about a { color: var(--ink); border-bottom: 1px solid var(--rule); }
+.about a:hover { color: var(--seal); border-bottom-color: var(--seal); }
+.about dl dt { font-weight: 600; margin-top: 0.9rem; color: var(--ink); }
+.about dl dd { margin: 0.3rem 0 0 1.5rem; color: var(--ink-3); }
+.about dl dd code { color: var(--ink); }
+
+.stat-list { list-style: none; margin-left: 0 !important; padding-left: 0; }
+.stat-list li {
+    background: var(--paper-tint);
+    border: 1px solid var(--rule-soft);
+    padding: 0.75rem 1rem;
+    margin: 0.4rem 0;
+}
+.stat-list strong {
+    color: var(--seal);
+    font-variant-numeric: tabular-nums;
+    font-family: var(--display);
+    font-style: normal;
+    font-weight: 500;
+}
+
+/* ============================================================
+   FOOTER — signature row
+   ============================================================ */
 
 footer {
-    border-top: 1px solid var(--border);
-    padding: 1rem 2rem;
-    color: var(--muted);
-    font-size: .85rem;
+    border-top: var(--rule-w) solid var(--rule);
+    margin-top: 3rem;
+    background: var(--paper-tint);
+}
+footer p {
+    max-width: var(--max);
+    margin: 0 auto;
+    padding: 1.4rem var(--gutter);
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-3);
     text-align: center;
 }
 footer .version-pill {
-    color: var(--muted);
+    color: var(--ink-3);
     text-decoration: none;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: .8rem;
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: .05rem .35rem;
-    display: inline-block;
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 0.1rem;
+    margin: 0 0.15rem;
 }
-footer .commit-link:hover { color: var(--accent); border-color: var(--accent); }
-
-/* About page — long-form methodology / shard / lineage explainer.
- * Designed to be lift-able to other spiritwriter apps (frio, perseus, etc.)
- * with minimal restyling. */
-.about { max-width: 760px; margin: 0 auto; }
-.about h2 { margin: 0 0 .25rem; }
-.about h3 { margin: 2.25rem 0 .75rem; font-size: 1.15rem; }
-.about p { margin: .65rem 0; line-height: 1.7; }
-.about ul, .about dl { margin: .65rem 0 .65rem 1.25rem; line-height: 1.7; }
-.about li { margin: .25rem 0; }
-.about code {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: .05rem .35rem;
-    font-size: .9em;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-}
-.about pre {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-left: 3px solid var(--accent);
-    border-radius: 6px;
-    padding: 1rem 1.25rem;
-    overflow-x: auto;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: .85rem;
-    line-height: 1.5;
-}
-.about pre code { background: transparent; border: 0; padding: 0; font-size: inherit; }
-.about .example-label { margin: 1.25rem 0 .35rem; color: var(--muted); font-size: .9rem; }
-.about .example-label + pre { margin-top: 0; }
-.about .example-label strong { color: var(--fg); }
-.about a { color: var(--accent); }
-.about dl dt { font-weight: 600; margin-top: .75rem; color: var(--fg); }
-.about dl dd { margin: .25rem 0 0 1.5rem; color: var(--muted); }
-.about dl dd code { color: var(--fg); }
-.stat-list { list-style: none; margin-left: 0 !important; padding-left: 0; }
-.stat-list li {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: .65rem 1rem;
-    margin: .35rem 0;
-}
-.stat-list strong { color: var(--accent); font-variant-numeric: tabular-nums; }
+footer .commit-link:hover { color: var(--seal); border-bottom-color: var(--seal); }
 
 /* The spiritwriter.ai landing page is fully self-contained
  * (templates/landing.html ships its own embedded styles), so no rules here. */

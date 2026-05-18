@@ -15,7 +15,7 @@ from zeitghost.analytics import (
     compute_monthly_stats, render_bias_sparkline, source_slug,
     top_leaning_sources,
 )
-from zeitghost.bias import AnalyzedArticle
+from zeitghost.bias import AnalyzedArticle, bias_lean_display
 
 log = logging.getLogger(__name__)
 
@@ -112,7 +112,7 @@ def _render_source_pages(articles: list[AnalyzedArticle],
             "total_count": len(source_articles),
             "first_date": first_date,
             "last_date": last_date,
-            "overall_avg": f"{avg:.2f}",
+            "overall_avg": avg,
             "overall_lean": overall_lean,
             "monthly": monthly,
             "sparkline_svg": render_bias_sparkline(monthly),
@@ -169,6 +169,9 @@ def generate_site(articles: list[AnalyzedArticle],
 
     env = Environment(loader=FileSystemLoader(str(template_dir)),
                       autoescape=True)
+    # Direction + magnitude formatter for bias scores. Internal storage
+    # stays 0..1 (no political optics in math); display is symmetric.
+    env.filters["bias_lean"] = bias_lean_display
 
     articles = sorted(articles, key=lambda a: a.original.published, reverse=True)
     visible = articles[:max_articles]
@@ -197,6 +200,14 @@ def generate_site(articles: list[AnalyzedArticle],
     except PackageNotFoundError:
         sw_core_version = ""
 
+    # Map source_name → slug for sources that have their own /source/<slug>.html
+    # page (matches the ≥5-article threshold _render_source_pages uses). The
+    # _card.html template uses this to render the source name as a link only
+    # when there's actually a destination.
+    source_links = {
+        s.source_name: s.slug for s in stats if s.count >= 5
+    }
+
     base_ctx = {
         "site_name": site_name,
         "site_tagline": site_tagline,
@@ -205,6 +216,7 @@ def generate_site(articles: list[AnalyzedArticle],
         "source_count": len(stats),
         "zeitghost_commit": commit,
         "sw_core_version": sw_core_version,
+        "source_links": source_links,
     }
 
     # --- index.html with the bias slider ------------------------------------

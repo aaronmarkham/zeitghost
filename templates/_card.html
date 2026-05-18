@@ -1,57 +1,167 @@
 {# Reusable article card. Used by both the home feed (index.html) and the
    per-source time-travel page (source.html) so any layout/data changes
    propagate to both views. The slider/range JS targets `article.card`
-   regardless of which page rendered it. #}
+   regardless of which page rendered it.
+
+   The card flips 3D to reveal a shard-inspector back face. The crystal+helix
+   icon (top-right corner) toggles the flip state. Same icon is clickable
+   from both sides — clicking from the back flips it forward again. #}
 <article class="card"
          data-bias="{{ '%.2f' | format(article.bias_score) }}"
          data-bias-label="{{ article.bias_label }}"
          data-published="{{ article.original.published[:10] }}"
          data-source="{{ article.original.source_name }}"
          style="{{ article.bias_tint_inline }}">
-    <p class="meta">
-        <span class="source">{{ article.original.source_name }}</span>
-        <span class="date">{{ article.original.published[:10] }}</span>
-    </p>
-    <div class="bias-chart"
-         data-source-pos="{{ '%.3f' | format(article.bias_score) }}"
-         data-source-label="{{ article.bias_label }}">
-        <span class="bias-bar">
-            <span class="bias-bar-marker bias-bar-marker-source"
-                  style="left: {{ '%.1f' | format(article.bias_score * 100) }}%;"
-                  title="Source bias"></span>
-            <span class="bias-bar-marker bias-bar-marker-current"
-                  style="left: {{ '%.1f' | format(article.bias_score * 100) }}%;"
-                  title="Currently showing"></span>
-        </span>
-        <p class="bias-legend">
-            <span class="legend-item">
-                <span class="legend-marker legend-marker-source"></span>
-                Original: <span class="legend-source-value">{{ article.bias_label }} &middot; {{ '%.2f' | format(article.bias_score) }}</span>
+
+    <button type="button" class="card-flip-trigger"
+            aria-label="Inspect shard lineage"
+            title="Inspect shard lineage"
+            aria-pressed="false">
+        <svg class="shard-icon" viewBox="0 0 28 32" aria-hidden="true">
+            {# Crystal: elongated hexagonal shard, the outer container #}
+            <path d="M14 2 L24 8 L24 24 L14 30 L4 24 L4 8 Z"
+                  fill="none" stroke="currentColor" stroke-width="1.4"
+                  stroke-linejoin="round"/>
+            {# Helix rungs: three subtle crossbars at the strand intersections #}
+            <g stroke="currentColor" stroke-width="0.6" opacity="0.45">
+                <line x1="9" y1="10" x2="19" y2="10"/>
+                <line x1="9" y1="16" x2="19" y2="16"/>
+                <line x1="9" y1="22" x2="19" y2="22"/>
+            </g>
+            {# Double helix: two opposing sinusoidal strands #}
+            <path d="M9 7 C 14 10 14 13 19 16 C 24 19 14 22 9 25"
+                  fill="none" stroke="currentColor" stroke-width="1.3"
+                  stroke-linecap="round"/>
+            <path d="M19 7 C 14 10 14 13 9 16 C 4 19 14 22 19 25"
+                  fill="none" stroke="currentColor" stroke-width="1.3"
+                  stroke-linecap="round"/>
+        </svg>
+    </button>
+
+    <div class="card-flipper">
+
+    <div class="card-face card-front">
+        <div class="meta">
+            {% set _slug = (source_links or {}).get(article.original.source_name) %}
+            {% if _slug %}
+            <a class="source" href="/source/{{ _slug }}.html">{{ article.original.source_name }}</a>
+            {% else %}
+            <span class="source">{{ article.original.source_name }}</span>
+            {% endif %}
+            <span class="date">{{ article.original.published[:10] }}</span>
+        </div>
+        <div class="bias-chart"
+             data-source-pos="{{ '%.3f' | format(article.bias_score) }}"
+             data-source-label="{{ article.bias_label }}">
+            <span class="bias-bar">
+                <span class="bias-bar-marker bias-bar-marker-source"
+                      style="left: {{ '%.1f' | format(article.bias_score * 100) }}%;"
+                      title="Source bias"></span>
+                <span class="bias-bar-marker bias-bar-marker-current"
+                      style="left: {{ '%.1f' | format(article.bias_score * 100) }}%;"
+                      title="Currently showing"></span>
             </span>
-            <span class="legend-divider">|</span>
-            <span class="legend-item">
-                <span class="legend-marker legend-marker-current"></span>
-                Current: <span class="legend-current-value">original &middot; {{ '%.2f' | format(article.bias_score) }}</span>
-            </span>
+            <p class="bias-legend">
+                <span class="legend-item">
+                    <span class="legend-marker legend-marker-source"></span>
+                    Source <span class="legend-source-value">{{ article.bias_score | bias_lean }}</span>
+                </span>
+                <span class="legend-divider">|</span>
+                <span class="legend-item">
+                    <span class="legend-marker legend-marker-current"></span>
+                    Now <span class="legend-current-value">original &middot; {{ article.bias_score | bias_lean }}</span>
+                </span>
+            </p>
+        </div>
+
+        <div class="variant variant-left" hidden>
+            <h2>{{ article.variant_left_title }}</h2>
+            <p>{{ article.variant_left_summary }}</p>
+        </div>
+        <div class="variant variant-original">
+            <h2>{{ article.original.title }}</h2>
+            <p>{{ article.original.summary }}</p>
+        </div>
+        <div class="variant variant-right" hidden>
+            <h2>{{ article.variant_right_title }}</h2>
+            <p>{{ article.variant_right_summary }}</p>
+        </div>
+
+        <p class="source-link">
+            <a href="{{ article.permalink }}">Permalink</a>
+            <a href="{{ article.original.url }}" rel="noopener" target="_blank">Read original at {{ article.original.source_name }} &rarr;</a>
         </p>
     </div>
 
-    <div class="variant variant-left" hidden>
-        <h2>{{ article.variant_left_title }}</h2>
-        <p>{{ article.variant_left_summary }}</p>
-    </div>
-    <div class="variant variant-original">
-        <h2>{{ article.original.title }}</h2>
-        <p>{{ article.original.summary }}</p>
-    </div>
-    <div class="variant variant-right" hidden>
-        <h2>{{ article.variant_right_title }}</h2>
-        <p>{{ article.variant_right_summary }}</p>
+    <div class="card-face card-back" aria-hidden="true">
+        <div class="back-header">
+            <span class="back-label">Shard Inspector</span>
+            <span class="back-context">{{ article.original.source_name }} &middot; {{ article.original.published[:10] }}</span>
+        </div>
+
+        <dl class="shard-spec">
+            <dt>Shard</dt>
+            <dd>
+                {% if article.shard_id %}
+                <span class="hash" title="{{ article.shard_id }}">{{ article.shard_id[:16] }}<span class="hash-tail">&hellip;</span></span>
+                {% else %}
+                <span class="muted">&mdash;</span>
+                {% endif %}
+                <span class="info-popover">
+                    <button type="button" class="info-trigger" aria-label="What is a shard?">i</button>
+                    <span class="info-bubble" role="tooltip">
+                        Content-addressed memory shard. Identity is the SHA-256 of atoms + scope + origin &mdash; writing identical content twice deduplicates.
+                        <a href="https://github.com/aaronmarkham/spiritwriter-core" rel="noopener">spiritwriter-core &rarr;</a>
+                    </span>
+                </span>
+            </dd>
+
+            <dt>Scope</dt>
+            <dd>{{ article.shard_scope or '—' }} <span class="muted">&middot; {{ article.shard_decay or 'stable' }}</span></dd>
+
+            <dt>Written</dt>
+            <dd>{{ (article.shard_created_at[:19].replace('T', ' ') + ' UTC') if article.shard_created_at else '—' }}</dd>
+
+            <dt>Model</dt>
+            <dd>{{ article.model or '—' }}</dd>
+
+            <dt>Agent</dt>
+            <dd>{{ article.agent or '—' }}</dd>
+
+            <dt>Parent</dt>
+            <dd>
+                {% if article.parent_shard_id %}
+                <span class="hash" title="{{ article.parent_shard_id }}">{{ article.parent_shard_id[:16] }}<span class="hash-tail">&hellip;</span></span>
+                <span class="muted">(re-analysis)</span>
+                {% else %}
+                <span class="muted">first revision</span>
+                {% endif %}
+            </dd>
+
+            <dt>Atoms</dt>
+            <dd class="atom-summary">
+                {% if article.shard_atom_kinds %}
+                    {% for kind, n in article.shard_atom_kinds.items() %}
+                    <span class="atom-kind">{{ kind }} <strong>&times;{{ n }}</strong></span>
+                    {% endfor %}
+                {% else %}
+                <span class="muted">—</span>
+                {% endif %}
+            </dd>
+
+            <dt>Tags</dt>
+            <dd class="tag-list">
+                {% if article.shard_tags %}
+                    {% for tag in article.shard_tags %}
+                    <span class="tag">{{ tag }}</span>
+                    {% endfor %}
+                {% else %}
+                <span class="muted">—</span>
+                {% endif %}
+            </dd>
+        </dl>
+
     </div>
 
-    <p class="source-link">
-        <a href="{{ article.permalink }}">Permalink</a>
-        &middot;
-        <a href="{{ article.original.url }}" rel="noopener" target="_blank">Read original at {{ article.original.source_name }}</a>
-    </p>
+    </div>{# /.card-flipper #}
 </article>
