@@ -8,6 +8,7 @@
 (function () {
     const slider = document.getElementById("bias-slider");
     const status = document.getElementById("slider-status");
+    const readout = document.getElementById("slider-readout");
     const rangeButtons = Array.from(document.querySelectorAll(".range-btn"));
     const snapCount = document.getElementById("snap-count");
     const snapRange = document.getElementById("snap-range");
@@ -36,6 +37,20 @@
         return "right";
     }
 
+    // Mirror bias_lean_display() in zeitghost/bias.py — symmetric tilt
+    // display ("L · 36%", "R · 48%", "CENTER") with each side running
+    // 0–100% (magnitude = |tilt| × 200) so the slider's endpoints read
+    // as full L / full R, not 50%. Keep the formula and the 0.025
+    // center-tolerance default in sync with the Python helper.
+    function biasLeanDisplay(score, centerTolerance) {
+        if (centerTolerance === undefined) centerTolerance = 0.025;
+        const tilt = score - 0.5;
+        if (Math.abs(tilt) < centerTolerance) return "CENTER";
+        const direction = tilt > 0 ? "R" : "L";
+        const magPct = Math.round(Math.abs(tilt) * 200);
+        return direction + " · " + magPct + "%";
+    }
+
     let activeRangeDays = 0; // 0 = no date filter
 
     function variantForValue(v) {
@@ -53,8 +68,10 @@
 
     function statusText(name, visible, total) {
         const subject = VARIANT_NAME[name].toLowerCase();
-        if (visible === total) return `Showing ${subject} for all ${total} articles`;
-        return `Showing ${subject} for ${visible} of ${total} articles`;
+        // Two registers: the framing (italic display) wrapped in <strong>,
+        // followed by the count (mono). The template seeds a default <strong>.
+        if (visible === total) return `<strong>Showing ${subject}</strong> &middot; all ${total} articles`;
+        return `<strong>Showing ${subject}</strong> &middot; ${visible} of ${total} articles`;
     }
 
     function fmtDate(iso) {
@@ -83,8 +100,8 @@
         }
         if (snapRange) snapRange.textContent = `${fmtDate(minD)} → ${fmtDate(maxD)}`;
         const avg = count > 0 ? sum / count : 0;
-        if (snapAvg) snapAvg.textContent = avg.toFixed(2);
-        if (snapAvgLabel) snapAvgLabel.textContent = `(${biasLabelFor(avg)})`;
+        if (snapAvg) snapAvg.textContent = biasLeanDisplay(avg);
+        if (snapAvgLabel) snapAvgLabel.textContent = "";
     }
 
     function apply() {
@@ -136,11 +153,12 @@
                 if (currentMarker) currentMarker.style.left = (currentPos * 100).toFixed(1) + "%";
                 const currentVal = chart.querySelector(".legend-current-value");
                 if (currentVal) currentVal.textContent =
-                    VARIANT_SHORT[variant] + " · " + currentPos.toFixed(2);
+                    VARIANT_SHORT[variant] + " · " + biasLeanDisplay(currentPos);
             }
         });
 
-        if (status) status.textContent = statusText(variant, visibleCards.length, cards.length);
+        if (status) status.innerHTML = statusText(variant, visibleCards.length, cards.length);
+        if (readout) readout.textContent = biasLeanDisplay(target);
         updateSnapshot(visibleCards);
     }
 
@@ -155,4 +173,23 @@
 
     slider.addEventListener("input", apply);
     apply();
+})();
+
+// Card flip: the crystal+helix trigger on each card toggles a 3D rotate
+// that reveals the shard-inspector back face. The trigger lives outside
+// the rotating element so it stays in place across flip states.
+(function () {
+    document.querySelectorAll("article.card .card-flip-trigger").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const card = btn.closest("article.card");
+            if (!card) return;
+            const flipped = card.classList.toggle("is-flipped");
+            btn.setAttribute("aria-pressed", flipped ? "true" : "false");
+            const back = card.querySelector(".card-back");
+            if (back) back.setAttribute("aria-hidden", flipped ? "false" : "true");
+            const front = card.querySelector(".card-front");
+            if (front) front.setAttribute("aria-hidden", flipped ? "true" : "false");
+        });
+    });
 })();

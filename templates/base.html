@@ -6,30 +6,43 @@
     <title>{% block title %}{{ site_name }}{% endblock %}</title>
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Caveat&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300..800;1,6..72,300..800&family=JetBrains+Mono:ital,wght@0,400..700;1,400..700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
     <header>
-        <h1 class="brand">
-            <a href="/">
-                <img src="/static/images/spirit-animals/spirit.svg" alt="Spirit Guide" class="nav-logo">
-                <span class="brand-text">{{ site_name }}</span>
-            </a>
-        </h1>
-        <p class="tagline">{{ site_tagline }}</p>
-        <nav>
-            <a href="/">Home</a>
-            <a href="/analytics.html">Source Bias</a>
-            <a href="/about.html">About</a>
-        </nav>
+        <div class="masthead">
+            <span><span class="dot"></span>{{ site_name }} &middot; Daily Bias Index</span>
+            <div class="right">
+                <span>{{ total_articles }} articles &middot; {{ source_count }} sources</span>
+                <span>updated {{ generated_at[:10] }}</span>
+                <span>vol. iv &middot; folio i</span>
+            </div>
+        </div>
+        <div class="header-row">
+            <div>
+                <h1 class="brand">
+                    <a href="/">
+                        <img src="/static/images/spirit-animals/spirit.svg" alt="Spirit Guide" class="nav-logo">
+                        <span class="brand-text">{{ site_name }}</span>
+                    </a>
+                </h1>
+                <p class="tagline">{{ site_tagline }}</p>
+            </div>
+            <nav>
+                <a href="/">Home</a>
+                <a href="/analytics.html">Source Bias</a>
+                <a href="/about.html">About</a>
+            </nav>
+        </div>
     </header>
     <main>
         {% block content %}{% endblock %}
     </main>
     <footer>
         <p>
-            Updated {{ generated_at[:10] }} &mdash; {{ total_articles }} articles from {{ source_count }} sources
+            Updated {{ generated_at[:10] }} &middot; {{ total_articles }} articles from {{ source_count }} sources
             {% if sw_core_version %}
             &middot;
             <span class="version-pill" title="spiritwriter-core version installed in the build">spiritwriter-core {{ sw_core_version }}</span>

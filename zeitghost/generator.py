@@ -15,7 +15,13 @@ from zeitghost.analytics import (
     compute_monthly_stats, render_bias_sparkline, source_slug,
     top_leaning_sources,
 )
-from zeitghost.bias import AnalyzedArticle
+from zeitghost.bias import AnalyzedArticle, bias_lean_display
+
+# A source needs at least this many articles before it gets its own
+# per-source page (and, by the same logic, before its name on a card
+# becomes a link). Single source of truth so the link-set and the
+# page-render set can't drift.
+MIN_ARTICLES_FOR_SOURCE_PAGE = 5
 
 log = logging.getLogger(__name__)
 
@@ -50,7 +56,7 @@ def _render_source_pages(articles: list[AnalyzedArticle],
                          env: Environment,
                          output_dir: Path,
                          base_ctx: dict,
-                         min_articles: int = 5,
+                         min_articles: int = MIN_ARTICLES_FOR_SOURCE_PAGE,
                          max_articles_per_page: int = 500) -> int:
     """Emit /source/<slug>.html for each source with >=min_articles.
 
@@ -112,7 +118,9 @@ def _render_source_pages(articles: list[AnalyzedArticle],
             "total_count": len(source_articles),
             "first_date": first_date,
             "last_date": last_date,
-            "overall_avg": f"{avg:.2f}",
+            # Float (0..1), rendered via the `bias_lean` filter in source.html.
+            # Previously a "%.2f"-formatted string — silently changed shape.
+            "overall_avg": avg,
             "overall_lean": overall_lean,
             "monthly": monthly,
             "sparkline_svg": render_bias_sparkline(monthly),
@@ -169,6 +177,9 @@ def generate_site(articles: list[AnalyzedArticle],
 
     env = Environment(loader=FileSystemLoader(str(template_dir)),
                       autoescape=True)
+    # Direction + magnitude formatter for bias scores. Internal storage
+    # stays 0..1 (no political optics in math); display is symmetric.
+    env.filters["bias_lean"] = bias_lean_display
 
     articles = sorted(articles, key=lambda a: a.original.published, reverse=True)
     visible = articles[:max_articles]
@@ -197,6 +208,14 @@ def generate_site(articles: list[AnalyzedArticle],
     except PackageNotFoundError:
         sw_core_version = ""
 
+    # Map source_name → slug for sources that have their own /source/<slug>.html
+    # page. Threshold is shared with _render_source_pages so the link-set and
+    # the rendered-page set can't drift.
+    source_links = {
+        s.source_name: s.slug for s in stats
+        if s.count >= MIN_ARTICLES_FOR_SOURCE_PAGE
+    }
+
     base_ctx = {
         "site_name": site_name,
         "site_tagline": site_tagline,
@@ -205,6 +224,7 @@ def generate_site(articles: list[AnalyzedArticle],
         "source_count": len(stats),
         "zeitghost_commit": commit,
         "sw_core_version": sw_core_version,
+        "source_links": source_links,
     }
 
     # --- index.html with the bias slider ------------------------------------

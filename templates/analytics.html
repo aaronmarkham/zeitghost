@@ -28,7 +28,7 @@
     <div class="bias-distribution">
         <div class="bias-bucket">
             <div class="bucket-num bias-left">{{ bias_distribution.left }}</div>
-            <div class="bucket-label">Left-leaning <span class="bucket-range">(&lt; {{ '%.2f' | format(0.48) }})</span></div>
+            <div class="bucket-label">Left-leaning</div>
             <div class="bucket-progress">
                 <div class="bucket-progress-bar bias-left"
                      style="width: {{ '%.1f' | format(bias_distribution.pct(bias_distribution.left)) }}%;"></div>
@@ -37,7 +37,7 @@
         </div>
         <div class="bias-bucket">
             <div class="bucket-num bias-center">{{ bias_distribution.center }}</div>
-            <div class="bucket-label">Center <span class="bucket-range">({{ '%.2f' | format(0.48) }}–{{ '%.2f' | format(0.52) }})</span></div>
+            <div class="bucket-label">Center</div>
             <div class="bucket-progress">
                 <div class="bucket-progress-bar bias-center"
                      style="width: {{ '%.1f' | format(bias_distribution.pct(bias_distribution.center)) }}%;"></div>
@@ -46,7 +46,7 @@
         </div>
         <div class="bias-bucket">
             <div class="bucket-num bias-right">{{ bias_distribution.right }}</div>
-            <div class="bucket-label">Right-leaning <span class="bucket-range">(&gt; {{ '%.2f' | format(0.52) }})</span></div>
+            <div class="bucket-label">Right-leaning</div>
             <div class="bucket-progress">
                 <div class="bucket-progress-bar bias-right"
                      style="width: {{ '%.1f' | format(bias_distribution.pct(bias_distribution.right)) }}%;"></div>
@@ -62,13 +62,13 @@
             {% if left_sources %}
             <table class="source-stats">
                 <thead>
-                    <tr><th>Source</th><th>Avg bias</th><th>Articles</th></tr>
+                    <tr><th>Source</th><th>Lean</th><th>Articles</th></tr>
                 </thead>
                 <tbody>
                 {% for s in left_sources %}
                     <tr>
                         <td class="source-name">{{ s.source_name }}</td>
-                        <td class="num"><span class="bias-badge bias-left">{{ '%.3f' | format(s.mean_bias) }}</span></td>
+                        <td class="num">{{ s.mean_bias | bias_lean }}</td>
                         <td class="num">{{ s.count }}</td>
                     </tr>
                 {% endfor %}
@@ -83,13 +83,13 @@
             {% if right_sources %}
             <table class="source-stats">
                 <thead>
-                    <tr><th>Source</th><th>Avg bias</th><th>Articles</th></tr>
+                    <tr><th>Source</th><th>Lean</th><th>Articles</th></tr>
                 </thead>
                 <tbody>
                 {% for s in right_sources %}
                     <tr>
                         <td class="source-name">{{ s.source_name }}</td>
-                        <td class="num"><span class="bias-badge bias-right">{{ '%.3f' | format(s.mean_bias) }}</span></td>
+                        <td class="num">{{ s.mean_bias | bias_lean }}</td>
                         <td class="num">{{ s.count }}</td>
                     </tr>
                 {% endfor %}
@@ -108,24 +108,22 @@
         <thead>
             <tr>
                 <th>Category</th>
-                <th>Avg bias</th>
                 <th>Lean</th>
                 <th>Articles</th>
-                <th>Bias scale</th>
+                <th>Scale</th>
             </tr>
         </thead>
         <tbody>
         {% for c in category_stats %}
             <tr>
                 <td class="source-name">{{ c.category | replace('_', ' ') | title }}</td>
-                <td class="num">{{ '%.3f' | format(c.mean_bias) }}</td>
-                <td><span class="bias-badge bias-{{ c.lean }}">{{ c.lean }}</span></td>
+                <td class="num">{{ c.mean_bias | bias_lean }}</td>
                 <td class="num">{{ c.count }}</td>
                 <td>
                     <div class="cat-scale">
                         <div class="cat-scale-marker bias-{{ c.lean }}"
                              style="left: {{ '%.1f' | format(c.mean_bias * 100) }}%;"
-                             title="Mean bias {{ '%.3f' | format(c.mean_bias) }}"></div>
+                             title="Mean lean {{ c.mean_bias | bias_lean }}"></div>
                     </div>
                 </td>
             </tr>
@@ -138,7 +136,7 @@
 
     {# All sources, full per-source rollup ------------------------------ #}
     <h3>All sources <span class="muted">(per-source 5-bucket histogram)</span></h3>
-    <p class="lead muted">Aggregated bias score (0=far left, 1=far right) across all articles per source. The histogram bars are scaled to article count.</p>
+    <p class="lead muted">Mean and median lean for each source, with a 5-bucket histogram of where its articles fall on the left-to-right spectrum. Histogram bars are scaled to article count.</p>
     <div class="source-filter">
         <input type="text" id="source-filter-input"
                placeholder="Filter sources by name…"
@@ -167,8 +165,8 @@
                     {% endif %}
                 </td>
                 <td class="num">{{ s.count }}</td>
-                <td class="num">{{ '%.2f' | format(s.mean_bias) }}</td>
-                <td class="num">{{ '%.2f' | format(s.median_bias) }}</td>
+                <td class="num">{{ s.mean_bias | bias_lean }}</td>
+                <td class="num">{{ s.median_bias | bias_lean }}</td>
                 <td class="histogram">
                     {% for label in ['left', 'center-left', 'center', 'center-right', 'right'] %}
                     {% set n = s.histogram.get(label, 0) %}

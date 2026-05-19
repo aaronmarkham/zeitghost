@@ -12,9 +12,8 @@
         {% if first_date and last_date %}
         &middot; {{ first_date }} &rarr; {{ last_date }}
         {% endif %}
-        &middot; lifetime avg bias
-        <strong>{{ overall_avg }}</strong>
-        <span class="bias-badge bias-{{ overall_lean }}">{{ overall_lean }}</span>
+        &middot; lifetime lean
+        <strong>{{ overall_avg | bias_lean }}</strong>
     </p>
 </section>
 
@@ -31,20 +30,19 @@
     </div>
     <table class="source-stats">
         <thead>
-            <tr><th>Month</th><th>Articles</th><th>Avg bias</th><th>Lean</th><th>Bias scale</th></tr>
+            <tr><th>Month</th><th>Articles</th><th>Lean</th><th>Scale</th></tr>
         </thead>
         <tbody>
         {% for m in monthly %}
             <tr>
                 <td class="source-name">{{ m.label }}</td>
                 <td class="num">{{ m.count }}</td>
-                <td class="num">{{ '%.3f' | format(m.mean_bias) }}</td>
-                <td><span class="bias-badge bias-{{ m.lean }}">{{ m.lean }}</span></td>
+                <td class="num">{{ m.mean_bias | bias_lean }}</td>
                 <td>
                     <div class="cat-scale">
                         <div class="cat-scale-marker bias-{{ m.lean }}"
                              style="left: {{ '%.1f' | format(m.mean_bias * 100) }}%;"
-                             title="Mean bias {{ '%.3f' | format(m.mean_bias) }}"></div>
+                             title="Mean lean {{ m.mean_bias | bias_lean }}"></div>
                     </div>
                 </td>
             </tr>

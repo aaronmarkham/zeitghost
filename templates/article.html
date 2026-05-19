@@ -19,7 +19,7 @@
             <p class="bias-legend">
                 <span class="legend-item">
                     <span class="legend-marker legend-marker-source"></span>
-                    Source: <span class="legend-source-value">{{ article.bias_label }} &middot; {{ '%.2f' | format(article.bias_score) }}</span>
+                    Source: <span class="legend-source-value">{{ article.bias_score | bias_lean }}</span>
                 </span>
             </p>
         </div>

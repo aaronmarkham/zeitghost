@@ -3,7 +3,7 @@
 import hashlib
 import json
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from zeitghost.fetcher import Article
 
@@ -40,6 +40,20 @@ class AnalyzedArticle:
     variant_right_summary: str
     analysis_notes: str = ""
 
+    # Shard-substrate provenance — populated by `_shard_to_article` when an
+    # article is loaded back from the store, used by the card's flip panel
+    # to show what physically backs this analysis. Default-empty so freshly-
+    # constructed articles (e.g. in the legacy importer) round-trip cleanly.
+    shard_id: str = ""
+    parent_shard_id: str | None = None
+    shard_created_at: str = ""
+    shard_scope: str = ""
+    shard_decay: str = ""
+    shard_tags: list[str] = field(default_factory=list)
+    shard_atom_kinds: dict[str, int] = field(default_factory=dict)
+    model: str = ""            # LLM model that produced bias + variants
+    agent: str = ""            # zeitghost/<ver> sw_core/<ver>
+
     @property
     def permalink_slug(self) -> str:
         """Stable slug used for the per-article page filename.
@@ -63,12 +77,13 @@ class AnalyzedArticle:
 
         Endpoints match the CSS palette so inline styles and stylesheet
         bias-* class colors line up:
-        - --left  #4f8cc9 (RGB 79, 140, 201)
-        - --right #d96458 (RGB 217, 100, 88)
+        - --left  #2C5274 (RGB 44, 82, 116)   — oxford blue
+        - --right #B0463A (RGB 176, 70, 58)   — terracotta (sibling to
+                                                landing's wax-seal accent)
         """
-        r = round(79 + (217 - 79) * self.bias_score)
-        g = round(140 + (100 - 140) * self.bias_score)
-        b = round(201 + (88 - 201) * self.bias_score)
+        r = round(44 + (176 - 44) * self.bias_score)
+        g = round(82 + (70 - 82) * self.bias_score)
+        b = round(116 + (58 - 116) * self.bias_score)
         return (r, g, b)
 
     @property
@@ -87,6 +102,39 @@ class AnalyzedArticle:
         """
         r, g, b = self._bias_rgb
         return f"--bias-r: {r}; --bias-g: {g}; --bias-b: {b};"
+
+
+def bias_lean_display(score: float, center_tolerance: float = 0.025) -> str:
+    """Render a 0..1 bias score as a neutral direction + magnitude.
+
+    Mirror in JS: `biasLeanDisplay()` in static/js/slider.js. Keep the
+    formula (|tilt| × 200) and the `center_tolerance` default in sync —
+    if you retune the band here, retune there too.
+
+
+    The internal storage convention (0 = left, 0.5 = center, 1 = right)
+    is unit-interval math that's convenient for interpolation but reads
+    politically ("100% bias = right") when shown raw. This helper
+    renders any score as a symmetric tilt off center, with magnitude
+    scaled so each side runs 0–100% (i.e. magnitude = |tilt| × 200,
+    so an article at score 0.0 reads as "L · 100%" — full left).
+
+        0.50 → "CENTER"
+        0.74 → "R · 48%"
+        0.32 → "L · 36%"
+        0.00 → "L · 100%"
+        1.00 → "R · 100%"
+
+    Values within `center_tolerance` of 0.5 render as "CENTER" without
+    a magnitude — the slider's true mid-point is a verbal label, not a
+    near-zero number.
+    """
+    tilt = score - 0.5
+    if abs(tilt) < center_tolerance:
+        return "CENTER"
+    direction = "R" if tilt > 0 else "L"
+    mag_pct = int(round(abs(tilt) * 200))
+    return f"{direction} · {mag_pct}%"
 
 
 ANALYSIS_PROMPT = """\

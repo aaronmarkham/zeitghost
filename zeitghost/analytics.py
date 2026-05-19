@@ -108,10 +108,11 @@ class MonthlyStats:
 
 def _sparkline_dot_color(score: float) -> str:
     """RGB string interpolating the bias palette — same math as
-    AnalyzedArticle.bias_tint so per-month dots match per-card colors."""
-    r = round(79 + (217 - 79) * score)
-    g = round(140 + (100 - 140) * score)
-    b = round(201 + (88 - 201) * score)
+    AnalyzedArticle._bias_rgb so per-month dots match per-card colors.
+    Endpoints are oxford blue (#2C5274) → terracotta (#B0463A)."""
+    r = round(44 + (176 - 44) * score)
+    g = round(82 + (70 - 82) * score)
+    b = round(116 + (58 - 116) * score)
     return f"rgb({r},{g},{b})"
 
 
@@ -137,6 +138,15 @@ def render_bias_sparkline(monthly: list["MonthlyStats"],
     def _y(bias: float) -> float:
         return padding + (1.0 - bias) * plot_h
 
+    # Local import keeps the analytics → bias cycle off the cold path
+    from zeitghost.bias import bias_lean_display
+
+    # Palette matches the data-newspaper site (paper ground, ink trajectory,
+    # warm-rule center reference) so the sparkline reads on light paper.
+    INK = "#14110E"
+    RULE = "#BFB39B"
+    PAPER = "#F4F1EA"
+
     if n == 1:
         x = width / 2
         y = _y(monthly[0].mean_bias)
@@ -145,12 +155,12 @@ def render_bias_sparkline(monthly: list["MonthlyStats"],
             f'xmlns="http://www.w3.org/2000/svg" role="img" '
             f'aria-label="Bias sparkline (single month)">'
             f'<line x1="{padding}" y1="{center_y:.1f}" x2="{width - padding}" '
-            f'y2="{center_y:.1f}" stroke="#30363d" stroke-width="1" '
+            f'y2="{center_y:.1f}" stroke="{RULE}" stroke-width="1" '
             f'stroke-dasharray="3,3" />'
             f'<circle cx="{x:.1f}" cy="{y:.1f}" r="4" '
             f'fill="{_sparkline_dot_color(monthly[0].mean_bias)}" '
-            f'stroke="#0d1117" stroke-width="1.5">'
-            f'<title>{monthly[0].label}: {monthly[0].mean_bias:.2f}</title>'
+            f'stroke="{PAPER}" stroke-width="1.5">'
+            f'<title>{monthly[0].label}: {bias_lean_display(monthly[0].mean_bias)}</title>'
             f'</circle></svg>'
         )
 
@@ -165,20 +175,20 @@ def render_bias_sparkline(monthly: list["MonthlyStats"],
         f'<svg class="bias-sparkline" viewBox="0 0 {width} {height}" '
         f'xmlns="http://www.w3.org/2000/svg" role="img" '
         f'aria-label="Mean bias by month">',
-        # Center reference (0.5)
+        # Center reference (CENTER)
         f'<line x1="{padding}" y1="{center_y:.1f}" x2="{width - padding}" '
-        f'y2="{center_y:.1f}" stroke="#30363d" stroke-width="1" '
+        f'y2="{center_y:.1f}" stroke="{RULE}" stroke-width="1" '
         f'stroke-dasharray="3,3" />',
         # Trajectory
-        f'<path d="{path_d}" fill="none" stroke="#58a6ff" stroke-width="2" '
-        f'stroke-linejoin="round" stroke-linecap="round" />',
+        f'<path d="{path_d}" fill="none" stroke="{INK}" stroke-width="1.5" '
+        f'stroke-linejoin="round" stroke-linecap="round" opacity="0.85" />',
     ]
     for x, y, m in points:
         parts.append(
             f'<circle cx="{x:.1f}" cy="{y:.1f}" r="3.5" '
             f'fill="{_sparkline_dot_color(m.mean_bias)}" '
-            f'stroke="#0d1117" stroke-width="1.5">'
-            f'<title>{m.label}: {m.mean_bias:.2f}</title>'
+            f'stroke="{PAPER}" stroke-width="1.5">'
+            f'<title>{m.label}: {bias_lean_display(m.mean_bias)}</title>'
             f'</circle>'
         )
     parts.append('</svg>')

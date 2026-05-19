@@ -90,9 +90,10 @@ def test_bias_tint_inline_exposes_css_variables():
         variant_right_title="", variant_right_summary="",
     )
     inline = a.bias_tint_inline
-    assert "--bias-r: 79" in inline
-    assert "--bias-g: 140" in inline
-    assert "--bias-b: 201" in inline
+    # Endpoints match the CSS palette: --left #2C5274 (44, 82, 116) at bias=0
+    assert "--bias-r: 44" in inline
+    assert "--bias-g: 82" in inline
+    assert "--bias-b: 116" in inline
 
 
 def test_bias_tint_interpolates_blue_to_red():
@@ -109,14 +110,13 @@ def test_bias_tint_interpolates_blue_to_red():
             variant_right_title="", variant_right_summary="",
         ).bias_tint
 
-    # Endpoints land on the existing CSS palette (--left / --right)
-    assert tint(0.0) == "rgb(79, 140, 201)"   # CSS --left
-    assert tint(1.0) == "rgb(217, 100, 88)"   # CSS --right
-    # Midpoint is a smooth interpolation, not pure gray
+    # Endpoints land on the CSS palette (--left oxford blue, --right terracotta)
+    assert tint(0.0) == "rgb(44, 82, 116)"    # CSS --left
+    assert tint(1.0) == "rgb(176, 70, 58)"    # CSS --right
+    # Midpoint is a smooth interpolation between the endpoints
     mid = tint(0.5)
     assert mid.startswith("rgb(") and mid.endswith(")")
-    # Sanity: midpoint should fall between the endpoints on R and B channels
-    assert "rgb(148, 120, 144)" == mid  # exact midpoint of (79..217, 140..100, 201..88)
+    assert "rgb(110, 76, 87)" == mid  # exact midpoint of (44..176, 82..70, 116..58)
 
 
 def test_permalink_falls_back_to_url_hash():
@@ -143,6 +143,44 @@ def test_permalink_falls_back_to_url_hash():
         variant_left_title="", variant_left_summary="",
         variant_right_title="", variant_right_summary="",
     ).permalink_slug
+
+
+def test_bias_lean_display_center_band():
+    """Values within ±tolerance of 0.5 render as the verbal label CENTER
+    (no near-zero magnitude like 'R · .00' or 'L · .01')."""
+    from zeitghost.bias import bias_lean_display
+    assert bias_lean_display(0.50) == "CENTER"
+    assert bias_lean_display(0.49) == "CENTER"
+    assert bias_lean_display(0.51) == "CENTER"
+    # Just outside the default ±0.025 band — direction + magnitude
+    assert bias_lean_display(0.475) != "CENTER"
+    assert bias_lean_display(0.525) != "CENTER"
+
+
+def test_bias_lean_display_direction_and_magnitude():
+    """Above 0.5 → R, below → L. Each side runs 0–100% (magnitude is
+    |tilt|×200), so the slider's endpoints read as full L / full R."""
+    from zeitghost.bias import bias_lean_display
+    assert bias_lean_display(0.74) == "R · 48%"
+    assert bias_lean_display(0.32) == "L · 36%"
+    assert bias_lean_display(0.04) == "L · 92%"
+    assert bias_lean_display(0.96) == "R · 92%"
+    # Endpoints — full deflection on each side
+    assert bias_lean_display(0.0) == "L · 100%"
+    assert bias_lean_display(1.0) == "R · 100%"
+    # Just outside the center band
+    assert bias_lean_display(0.535) == "R · 7%"
+    assert bias_lean_display(0.58) == "R · 16%"
+
+
+def test_bias_lean_display_tolerance_parameter():
+    """Center tolerance can be tightened or loosened per-caller."""
+    from zeitghost.bias import bias_lean_display
+    # Tight tolerance: only literal 0.5 reads as CENTER
+    assert bias_lean_display(0.50, center_tolerance=0.001) == "CENTER"
+    assert bias_lean_display(0.49, center_tolerance=0.001) != "CENTER"
+    # Loose tolerance: a wider band
+    assert bias_lean_display(0.45, center_tolerance=0.1) == "CENTER"
 
 
 def test_extract_json_strips_fences():
@@ -348,10 +386,10 @@ def test_sparkline_renders_basic_shape():
     # One <circle> per month, each with a hover <title>
     assert svg.count("<circle") == 3
     assert svg.count("<title>") == 3
-    # Hover text format: "Mar 2026: 0.65"
-    assert "Jan 2026: 0.85" in svg
-    assert "Feb 2026: 0.55" in svg
-    assert "Mar 2026: 0.65" in svg
+    # Hover text uses the symmetric lean display (no raw 0..1 leakage)
+    assert "Jan 2026: R · 70%" in svg
+    assert "Feb 2026: R · 10%" in svg
+    assert "Mar 2026: R · 30%" in svg
 
 
 def test_sparkline_single_month_renders_just_a_dot():
@@ -383,6 +421,63 @@ def test_analytics_category_stats_sorted_alphabetically():
     assert by_name["progressive"].lean == "left"
     assert by_name["mixed"].lean == "center"
     assert by_name["conservative"].lean == "right"
+
+
+def test_shard_metadata_round_trip(tmp_path):
+    """An article written then re-read from a real ShardStore must carry
+    its shard_id / parent_shard_id / model / agent / atom_kinds / tags onto
+    the AnalyzedArticle so the card flip-panel has something to render."""
+    from zeitghost.bias import AnalyzedArticle
+    from zeitghost.fetcher import Article
+    from zeitghost.shards import (
+        init_store, article_to_internal_shard, load_articles_from_shards,
+        build_lineage_index, SCOPE_INTERNAL,
+    )
+
+    store = init_store(tmp_path / "shards")
+    a = AnalyzedArticle(
+        original=Article(title="T", url="https://e.com/round-trip",
+                         summary="S", source_name="AP",
+                         published="2026-05-12T00:00:00+00:00",
+                         categories=["politics"]),
+        bias_score=0.52, bias_label="center",
+        variant_left_title="L", variant_left_summary="L sum",
+        variant_right_title="R", variant_right_summary="R sum",
+    )
+
+    # First write — no parent, fresh provenance atoms get added
+    shard_id_1 = article_to_internal_shard(a, store)
+    assert shard_id_1
+
+    [reloaded] = load_articles_from_shards(store)
+    # Identity + lineage are populated
+    assert reloaded.shard_id == shard_id_1
+    assert reloaded.parent_shard_id is None
+    assert reloaded.shard_scope == SCOPE_INTERNAL
+    assert reloaded.shard_decay  # non-empty, e.g. "stable"
+    assert reloaded.shard_created_at  # ISO timestamp from spiritwriter
+    # Provenance atoms made it through
+    assert reloaded.model        # DEFAULT_MODEL was embedded
+    assert reloaded.agent        # zeitghost/<ver> sw_core/<ver>
+    assert "zeitghost/" in reloaded.agent
+    # Atom kinds tallied — at least one FACT and one DECISION on every article
+    assert reloaded.shard_atom_kinds
+    assert sum(reloaded.shard_atom_kinds.values()) >= 8
+    # Cross-cutting tags computed and round-tripped
+    assert "source:ap" in reloaded.shard_tags
+    assert "category:politics" in reloaded.shard_tags
+    assert "month:2026-05" in reloaded.shard_tags
+
+    # Second write — different content forces a new shard_id, parent links
+    a.bias_score = 0.74  # re-analysis nudged the score
+    lineage = build_lineage_index(store, SCOPE_INTERNAL)
+    shard_id_2 = article_to_internal_shard(a, store, lineage_index=lineage)
+    assert shard_id_2 != shard_id_1
+
+    # Loading now returns both revisions; the newer one points at the older
+    revisions = load_articles_from_shards(store)
+    by_id = {r.shard_id: r for r in revisions}
+    assert by_id[shard_id_2].parent_shard_id == shard_id_1
 
 
 def test_legacy_dump_helpers_smoke():

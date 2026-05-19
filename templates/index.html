@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 <section class="range-toolbar" aria-label="Time range filter">
-    <span class="range-label">Time range</span>
+    <span class="range-label">Range</span>
     <div class="range-buttons" role="group">
         <button class="range-btn" data-days="7">1 wk</button>
         <button class="range-btn" data-days="14">2 wk</button>
@@ -12,26 +12,46 @@
     </div>
 </section>
 
+<section class="slider-bar" aria-label="Bias preference slider">
+    <div class="slider-instrument-row">
+        <span class="slider-instrument-title">The instrument &middot; <em>drag to re-frame</em></span>
+        <span class="slider-readout" id="slider-readout">CENTER</span>
+    </div>
+    <label for="bias-slider">
+        <div class="slider-gradient" aria-hidden="true">
+            <span class="tick" style="left: 10%"></span>
+            <span class="tick" style="left: 20%"></span>
+            <span class="tick" style="left: 30%"></span>
+            <span class="tick" style="left: 40%"></span>
+            <span class="tick major" style="left: 50%"></span>
+            <span class="tick" style="left: 60%"></span>
+            <span class="tick" style="left: 70%"></span>
+            <span class="tick" style="left: 80%"></span>
+            <span class="tick" style="left: 90%"></span>
+        </div>
+        <div class="slider-rail-wrap">
+            <input id="bias-slider" type="range" min="0" max="100" value="50" step="1">
+        </div>
+        <div class="slider-axis-labels">
+            <span class="left">Left</span>
+            <span>Center</span>
+            <span class="right">Right</span>
+        </div>
+    </label>
+    <p class="slider-status" id="slider-status"><strong>Showing original framing</strong></p>
+</section>
+
 <section class="snapshot-stats" id="snapshot-stats" aria-live="polite">
     <span class="stat-cell"><strong id="snap-count">{{ articles | length }}</strong> articles</span>
     <span class="stat-cell" id="snap-range">&mdash;</span>
-    <span class="stat-cell">avg bias <strong id="snap-avg">&mdash;</strong> <span id="snap-avg-label" class="muted"></span></span>
-</section>
-
-<section class="slider-bar" aria-label="Bias preference slider">
-    <label for="bias-slider">
-        <span>Left</span>
-        <input id="bias-slider" type="range" min="0" max="100" value="50" step="1">
-        <span>Right</span>
-    </label>
-    <p class="slider-status" id="slider-status">Showing original framing</p>
+    <span class="stat-cell">avg lean <strong id="snap-avg">&mdash;</strong> <span id="snap-avg-label" class="muted"></span></span>
 </section>
 
 <section class="articles">
     {% if not articles %}
     <article class="card empty-state">
         <h2>No articles ingested yet</h2>
-        <p>The first ingest cycle is running — Claude is analyzing the latest NewsAPI batch and writing shards. Articles typically appear within a few minutes of the first deploy. Refresh in a bit.</p>
+        <p>The first ingest cycle is running &mdash; Claude is analyzing the latest NewsAPI batch and writing shards. Articles typically appear within a few minutes of the first deploy. Refresh in a bit.</p>
     </article>
     {% endif %}
     {% for article in articles %}

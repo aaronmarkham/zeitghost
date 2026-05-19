@@ -95,13 +95,14 @@ def test_template_renders_with_full_data():
     """Sanity: the index template renders with normal article data."""
     from jinja2 import Environment, FileSystemLoader
 
-    from zeitghost.bias import AnalyzedArticle
+    from zeitghost.bias import AnalyzedArticle, bias_lean_display
     from zeitghost.fetcher import Article
 
     env = Environment(
         loader=FileSystemLoader(str(REPO_ROOT / "templates")),
         autoescape=True,
     )
+    env.filters["bias_lean"] = bias_lean_display
     article = AnalyzedArticle(
         original=Article(
             title="Senate passes bill", url="https://example.com/a",
@@ -200,13 +201,14 @@ def test_template_renders_with_empty_variants():
     template must still render — slider just won't have anything new to show."""
     from jinja2 import Environment, FileSystemLoader
 
-    from zeitghost.bias import AnalyzedArticle
+    from zeitghost.bias import AnalyzedArticle, bias_lean_display
     from zeitghost.fetcher import Article
 
     env = Environment(
         loader=FileSystemLoader(str(REPO_ROOT / "templates")),
         autoescape=True,
     )
+    env.filters["bias_lean"] = bias_lean_display
     article = AnalyzedArticle(
         original=Article(
             title="Some title", url="https://example.com/x",

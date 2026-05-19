@@ -16,13 +16,29 @@ from pathlib import Path
 from spiritwriter.fabric.shard import MemoryShard, ShardAtom, AtomKind, DecayClass
 from spiritwriter.fabric.store import ShardStore
 
-from zeitghost.bias import AnalyzedArticle
+from zeitghost import __version__ as _zg_version
+from zeitghost.bias import AnalyzedArticle, DEFAULT_MODEL
 from zeitghost.fetcher import Article
 
 log = logging.getLogger(__name__)
 
 SCOPE_INTERNAL = "zeitghost:article"
 SCOPE_SW_ARTICLE = "sw:article"
+
+
+def _agent_string() -> str:
+    """Identify the agent that wrote this shard: zeitghost version +
+    the underlying spiritwriter-core wheel version. Used in shard atoms so
+    the card's flip-panel can show what physically produced the analysis."""
+    try:
+        from importlib.metadata import version, PackageNotFoundError
+        try:
+            sw = version("spiritwriter-core")
+        except PackageNotFoundError:
+            sw = "?"
+    except ImportError:
+        sw = "?"
+    return f"zeitghost/{_zg_version} sw_core/{sw}"
 
 
 def init_store(store_path: Path | None = None) -> ShardStore:
@@ -147,6 +163,15 @@ def article_to_internal_shard(article: AnalyzedArticle, store: ShardStore,
     Pass `lineage_index` (from `build_lineage_index(store, SCOPE_INTERNAL)`)
     to chain re-writes via `parent_shard_id`. Without it, every write is
     treated as a first revision.
+
+    Provenance: the function embeds `model` + `agent` atoms so the card's
+    flip panel can show what produced this analysis. `article.model` and
+    `article.agent` are typically empty on fresh analysis — we then fall
+    back to `DEFAULT_MODEL` / `_agent_string()`. On *re-analysis* of a
+    loaded article, those fields are populated from the prior shard, so
+    if a different model actually did the new analysis the caller must
+    set `article.model` to the new value before calling this; otherwise
+    the prior model's name is preserved on disk.
     """
     entity = _url_entity(article.original.url)
     atoms = [
@@ -193,6 +218,21 @@ def article_to_internal_shard(article: AnalyzedArticle, store: ShardStore,
             kind=AtomKind.CONTEXT, entity=entity,
             key="analysis_notes", value=article.analysis_notes,
         ))
+    # Provenance — which model + agent produced this analysis. Surfaced on
+    # the card's flip-panel; lets us tell "was this re-analyzed by a newer
+    # model?" by following the parent_shard_id chain.
+    model_used = article.model or DEFAULT_MODEL
+    agent_used = article.agent or _agent_string()
+    atoms.append(ShardAtom(
+        text=f"Model: {model_used}",
+        kind=AtomKind.CONTEXT, entity=entity,
+        key="model", value=model_used,
+    ))
+    atoms.append(ShardAtom(
+        text=f"Agent: {agent_used}",
+        kind=AtomKind.CONTEXT, entity=entity,
+        key="agent", value=agent_used,
+    ))
     # Preserve HtmxNewsEngine row id for old share-link URL parity.
     if article.original.legacy_id is not None:
         atoms.append(ShardAtom(
@@ -304,6 +344,24 @@ def _shard_to_article(shard: MemoryShard) -> AnalyzedArticle | None:
         categories=categories,
         legacy_id=legacy_id,
     )
+    # Tally atom kinds for the card flip-panel's "ATOMS" section.
+    # AtomKind is the imported enum — its .value is the canonical label.
+    atom_kinds: dict[str, int] = {}
+    for atom in shard.atoms:
+        kind_name = atom.kind.value.lower()
+        atom_kinds[kind_name] = atom_kinds.get(kind_name, 0) + 1
+
+    # Pre-format the shard's created_at once, at load time, so the
+    # template just renders. Guards against spiritwriter ever returning
+    # a datetime instead of a string for `created_at`.
+    raw_created = shard.created_at or ""
+    if not isinstance(raw_created, str):
+        raw_created = str(raw_created)
+    shard_created_at = (
+        raw_created[:19].replace("T", " ") + " UTC"
+        if len(raw_created) >= 19 else ""
+    )
+
     try:
         return AnalyzedArticle(
             original=original,
@@ -314,6 +372,15 @@ def _shard_to_article(shard: MemoryShard) -> AnalyzedArticle | None:
             variant_right_title=vals.get("variant_right_title", original.title),
             variant_right_summary=vals.get("variant_right_summary", ""),
             analysis_notes=vals.get("analysis_notes", ""),
+            shard_id=shard.shard_id,
+            parent_shard_id=shard.parent_shard_id,
+            shard_created_at=shard_created_at,
+            shard_scope=shard.scope,
+            shard_decay=shard.decay_class.value,
+            shard_tags=list(shard.tags or []),
+            shard_atom_kinds=atom_kinds,
+            model=vals.get("model", ""),
+            agent=vals.get("agent", ""),
         )
     except (ValueError, TypeError) as e:
         log.warning("Failed to reconstruct article from shard %s: %s",
