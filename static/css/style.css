@@ -43,7 +43,9 @@
 }
 
 *, *::before, *::after { box-sizing: border-box; }
-*::selection { background: var(--right); color: var(--paper-tint); }
+/* Highlighter-pen amber — politically neutral, reads as a real marginalia
+   mark rather than as a tinted "right-leaning" wash. */
+*::selection { background: var(--highlight); color: var(--ink); }
 
 html, body {
     margin: 0;

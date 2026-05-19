@@ -40,7 +40,8 @@
     // Mirror bias_lean_display() in zeitghost/bias.py — symmetric tilt
     // display ("L · 36%", "R · 48%", "CENTER") with each side running
     // 0–100% (magnitude = |tilt| × 200) so the slider's endpoints read
-    // as full L / full R, not 50%.
+    // as full L / full R, not 50%. Keep the formula and the 0.025
+    // center-tolerance default in sync with the Python helper.
     function biasLeanDisplay(score, centerTolerance) {
         if (centerTolerance === undefined) centerTolerance = 0.025;
         const tilt = score - 0.5;

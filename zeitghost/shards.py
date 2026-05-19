@@ -163,6 +163,15 @@ def article_to_internal_shard(article: AnalyzedArticle, store: ShardStore,
     Pass `lineage_index` (from `build_lineage_index(store, SCOPE_INTERNAL)`)
     to chain re-writes via `parent_shard_id`. Without it, every write is
     treated as a first revision.
+
+    Provenance: the function embeds `model` + `agent` atoms so the card's
+    flip panel can show what produced this analysis. `article.model` and
+    `article.agent` are typically empty on fresh analysis — we then fall
+    back to `DEFAULT_MODEL` / `_agent_string()`. On *re-analysis* of a
+    loaded article, those fields are populated from the prior shard, so
+    if a different model actually did the new analysis the caller must
+    set `article.model` to the new value before calling this; otherwise
+    the prior model's name is preserved on disk.
     """
     entity = _url_entity(article.original.url)
     atoms = [
@@ -335,13 +344,23 @@ def _shard_to_article(shard: MemoryShard) -> AnalyzedArticle | None:
         categories=categories,
         legacy_id=legacy_id,
     )
-    # Tally atom kinds for the card flip-panel's "ATOMS" section
+    # Tally atom kinds for the card flip-panel's "ATOMS" section.
+    # AtomKind is the imported enum — its .value is the canonical label.
     atom_kinds: dict[str, int] = {}
     for atom in shard.atoms:
-        # AtomKind is an enum; .name (or .value) gives a stable lowercase label
-        kind_name = (atom.kind.value if hasattr(atom.kind, "value")
-                     else str(atom.kind)).lower()
+        kind_name = atom.kind.value.lower()
         atom_kinds[kind_name] = atom_kinds.get(kind_name, 0) + 1
+
+    # Pre-format the shard's created_at once, at load time, so the
+    # template just renders. Guards against spiritwriter ever returning
+    # a datetime instead of a string for `created_at`.
+    raw_created = shard.created_at or ""
+    if not isinstance(raw_created, str):
+        raw_created = str(raw_created)
+    shard_created_at = (
+        raw_created[:19].replace("T", " ") + " UTC"
+        if len(raw_created) >= 19 else ""
+    )
 
     try:
         return AnalyzedArticle(
@@ -355,11 +374,9 @@ def _shard_to_article(shard: MemoryShard) -> AnalyzedArticle | None:
             analysis_notes=vals.get("analysis_notes", ""),
             shard_id=shard.shard_id,
             parent_shard_id=shard.parent_shard_id,
-            shard_created_at=shard.created_at or "",
+            shard_created_at=shard_created_at,
             shard_scope=shard.scope,
-            shard_decay=(shard.decay_class.value
-                         if hasattr(shard.decay_class, "value")
-                         else str(shard.decay_class)),
+            shard_decay=shard.decay_class.value,
             shard_tags=list(shard.tags or []),
             shard_atom_kinds=atom_kinds,
             model=vals.get("model", ""),

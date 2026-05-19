@@ -17,6 +17,12 @@ from zeitghost.analytics import (
 )
 from zeitghost.bias import AnalyzedArticle, bias_lean_display
 
+# A source needs at least this many articles before it gets its own
+# per-source page (and, by the same logic, before its name on a card
+# becomes a link). Single source of truth so the link-set and the
+# page-render set can't drift.
+MIN_ARTICLES_FOR_SOURCE_PAGE = 5
+
 log = logging.getLogger(__name__)
 
 
@@ -50,7 +56,7 @@ def _render_source_pages(articles: list[AnalyzedArticle],
                          env: Environment,
                          output_dir: Path,
                          base_ctx: dict,
-                         min_articles: int = 5,
+                         min_articles: int = MIN_ARTICLES_FOR_SOURCE_PAGE,
                          max_articles_per_page: int = 500) -> int:
     """Emit /source/<slug>.html for each source with >=min_articles.
 
@@ -112,6 +118,8 @@ def _render_source_pages(articles: list[AnalyzedArticle],
             "total_count": len(source_articles),
             "first_date": first_date,
             "last_date": last_date,
+            # Float (0..1), rendered via the `bias_lean` filter in source.html.
+            # Previously a "%.2f"-formatted string — silently changed shape.
             "overall_avg": avg,
             "overall_lean": overall_lean,
             "monthly": monthly,
@@ -201,11 +209,11 @@ def generate_site(articles: list[AnalyzedArticle],
         sw_core_version = ""
 
     # Map source_name → slug for sources that have their own /source/<slug>.html
-    # page (matches the ≥5-article threshold _render_source_pages uses). The
-    # _card.html template uses this to render the source name as a link only
-    # when there's actually a destination.
+    # page. Threshold is shared with _render_source_pages so the link-set and
+    # the rendered-page set can't drift.
     source_links = {
-        s.source_name: s.slug for s in stats if s.count >= 5
+        s.source_name: s.slug for s in stats
+        if s.count >= MIN_ARTICLES_FOR_SOURCE_PAGE
     }
 
     base_ctx = {

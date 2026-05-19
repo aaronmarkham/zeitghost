@@ -107,6 +107,11 @@ class AnalyzedArticle:
 def bias_lean_display(score: float, center_tolerance: float = 0.025) -> str:
     """Render a 0..1 bias score as a neutral direction + magnitude.
 
+    Mirror in JS: `biasLeanDisplay()` in static/js/slider.js. Keep the
+    formula (|tilt| × 200) and the `center_tolerance` default in sync —
+    if you retune the band here, retune there too.
+
+
     The internal storage convention (0 = left, 0.5 = center, 1 = right)
     is unit-interval math that's convenient for interpolation but reads
     politically ("100% bias = right") when shown raw. This helper
