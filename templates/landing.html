@@ -895,7 +895,7 @@
     <li><a href="#manifesto">Manifesto</a></li>
     <li><a href="#primitives">Primitives</a></li>
     <li><a href="#code">Code</a></li>
-    <li><a href="#bear">Phalanx</a></li>
+    <li><a href="#bear">Resolution</a></li>
     <li><a href="#used-by">Used by</a></li>
     <li><a class="gh" href="https://github.com/aaronmarkham/spiritwriter-core">GitHub ↗</a></li>
   </ul>
@@ -962,7 +962,7 @@
       <div class="body">
         <p>Most memory systems for AI either embed everything into a vector and lose the lineage, or they bolt on a database and surrender locality, ownership, and proof. <strong>Spiritwriter takes the older, harder route.</strong> Knowledge is broken into atoms with explicit fields. Atoms compose into shards. Shards are addressed by the hash of their contents, so identical content from different agents resolves to the same record — no duplicates, no drift.</p>
 
-        <p>Above the shards: <strong>traces</strong>. Every step an agent takes is appended to a hash-chained log; tampering with one entry breaks the chain after it. <strong>Entitlements</strong> let you delegate work to a sub-agent without surrendering master keys. <strong>Encryption</strong> comes in two postures, picked by who you don't trust. And <strong>Phalanx</strong> resolves entities by their defining fields, not their surface forms — so "Bear" the dog never silently merges with "Bear" the brand.</p>
+        <p>Above the shards: <strong>traces</strong>. Every step an agent takes is appended to a hash-chained log; tampering with one entry breaks the chain after it. <strong>Entitlements</strong> let you delegate work to a sub-agent without surrendering master keys. <strong>Encryption</strong> comes in two postures, picked by who you don't trust. And <strong>entity resolution</strong> works by defining fields, not surface forms — so "Bear" the dog never silently merges with "Bear" the brand.</p>
 
         <p>It is a library, not a service. One <code style="font-family:var(--mono);font-size:0.85em;background:var(--parchment-deep);padding:0.05em 0.35em;border-radius:3px;">pip install</code>, no daemon, no vector store to host, no GPU. The artifact <em>is</em> the registry — version-controlled, emailed, restored from a backup like any other file.</p>
       </div>
@@ -1028,9 +1028,9 @@
       <article class="primitive reveal">
         <div class="num">vi</div>
         <div>
-          <h3><em>Phalanx</em> — entity resolution</h3>
-          <p>Tell entities apart even when names collide ("Bear" the dog vs. "Bear" the brand) and merge them when surface forms diverge ("Carlos Martinez" vs. "MARTINEZ, CARLOS A"). Same primitive, both directions.</p>
-          <div class="meta"><span class="tick">●</span><span>cmc-lite · ess digest · tiered</span></div>
+          <h3>Entity <em>resolution</em></h3>
+          <p>Tell entities apart when names collide ("Bear" the dog vs. "Bear" the brand) and merge them when surface forms diverge ("Carlos Martinez" vs. "MARTINEZ, CARLOS A"). Same engine, both directions. No graph database to operate, no embedding service to call — define your identifying fields, hand in records, get canonical IDs back.</p>
+          <div class="meta"><span class="tick">●</span><span>sqlite-backed · domain-agnostic · zero-infrastructure</span></div>
         </div>
       </article>
 
@@ -1049,6 +1049,15 @@
           <h3><em>Audit</em></h3>
           <p>Tamper-evident security audits for Android APKs. Inputs, evidence, findings, and final report bound into a hash-chained trace plus a self-hashing witness — anyone with the APK can re-run verification offline.</p>
           <div class="meta"><span class="tick">●</span><span>traced · witnessed · re-runnable</span></div>
+        </div>
+      </article>
+
+      <article class="primitive reveal">
+        <div class="num">ix</div>
+        <div>
+          <h3>Shingled <em>extraction</em></h3>
+          <p>Turn long-form text into atoms without losing facts at chunk boundaries. Overlapping windows + multi-pass extraction; only atoms that appear across multiple passes survive. The result feeds the shard store and the entity-resolution engine: extract once, resolve continuously.</p>
+          <div class="meta"><span class="tick">●</span><span>overlapping windows · n-of-k voting · checkpoint-resumable</span></div>
         </div>
       </article>
     </div>
@@ -1121,7 +1130,7 @@ context = store.<span class="fn">hydrate</span>([ref])    <span class="com"># XM
     <div class="section-head reveal">
       <div class="roman">IV.</div>
       <h2>The <em>Bear</em> problem.</h2>
-      <div class="folio">folio iv — phalanx</div>
+      <div class="folio">folio iv — resolution</div>
     </div>
 
     <div class="bear">
@@ -1130,7 +1139,7 @@ context = store.<span class="fn">hydrate</span>([ref])    <span class="com"># XM
 
         <p>Each document gives partial defining-field coverage. Your extractor classifies Bear three different ways. Three identifiers for the same entity, and they don't align. A naive system keeps them separate; a sloppy one collapses by surface name and now Bear-the-dog merges with Bear-the-beer-brand from Document 4. Embedding-based systems hallucinate the boundaries — "Bear" the dog scores close to "Bear" the bear scores close to "Bear" the brand, and the merge decisions become unauditable.</p>
 
-        <p><strong>Phalanx hashes the <em>defining fields</em></strong> — name, entity type, owner, dob — into an Entity Sense Signature: a deterministic identity hash. As more documents land, the field set per entity grows. The growing field set produces a stable ESS the moment you have enough fields to disambiguate. Fields not yet known don't penalize — they're absent from the hash.</p>
+        <p>The resolver <strong>hashes the <em>defining fields</em></strong> — name, entity type, owner, dob — into an Entity Sense Signature: a deterministic identity hash. As more documents land, the field set per entity grows. The growing field set produces a stable ESS the moment you have enough fields to disambiguate. Fields not yet known don't penalize — they're absent from the hash.</p>
 
         <p>The same primitive handles the inverse. "Carlos Martinez", "MARTINEZ, CARLOS A", and "C. Martinez" across three rosters dedupe into one entity, because their defining fields normalize to the same hash regardless of surface spelling.</p>
       </div>
@@ -1150,8 +1159,8 @@ context = store.<span class="fn">hydrate</span>([ref])    <span class="com"># XM
         </table>
 
         <div class="num-fact">
-          <div class="v">≥85<span style="font-size:0.5em;color:var(--ink-faint);"> %</span></div>
-          <div class="l">recall on semantic duplicates with ≤5% false-merge rate. No embeddings, no LLM in the merge path.</div>
+          <div class="v">100<span style="font-size:0.5em;color:var(--ink-faint);"> %</span></div>
+          <div class="l">auto-merge precision across 5 benchmark corpora. <strong>0</strong> false merges. <strong>12/12</strong> hand-curated collision pairs correctly distinguished. No embeddings, no LLM in the merge path.</div>
         </div>
       </aside>
     </div>
