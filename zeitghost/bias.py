@@ -172,6 +172,24 @@ Guidelines:
 """
 
 
+def _parse_bias_score(data: dict) -> float | None:
+    """Bias score from the LLM JSON, or None if absent/non-numeric.
+
+    Returns None rather than defaulting to 0.5 — an article we couldn't score
+    must be *skipped*, never silently published as "center" (robustness
+    invariant #1: skip or guard, never default-fill). A literal 0.0 (full
+    left) is a valid score and passes through; only a missing or unparseable
+    value yields None.
+    """
+    raw = data.get("bias_score")
+    if raw is None:
+        return None
+    try:
+        return float(raw)
+    except (TypeError, ValueError):
+        return None
+
+
 def _extract_json(text: str) -> dict | None:
     """Extract first valid JSON object from LLM response.
 
@@ -221,11 +239,19 @@ async def analyze_article(article: Article) -> AnalyzedArticle | None:
             log.debug("Raw response: %s", response[:500])
             return None
 
+        bias_score = _parse_bias_score(data)
+        if bias_score is None:
+            # No usable score → skip rather than default-fill to 0.5, which
+            # would mislabel an unscored article as "center" (invariant #1).
+            log.warning("Missing/invalid bias_score for '%s' — skipping",
+                        article.title[:50])
+            return None
+
         left = data.get("variant_left", {}) or {}
         right = data.get("variant_right", {}) or {}
         return AnalyzedArticle(
             original=article,
-            bias_score=float(data.get("bias_score", 0.5)),
+            bias_score=bias_score,
             bias_label=data.get("bias_label", "center"),
             variant_left_title=left.get("title", article.title),
             variant_left_summary=left.get("summary", article.summary),

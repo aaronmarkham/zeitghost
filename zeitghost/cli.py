@@ -42,7 +42,7 @@ def ingest(feeds: str, limit: int, max_requests: int | None, dry_run: bool):
     from zeitghost.bias import analyze_batch
     from zeitghost.shards import (init_store, known_url_entities, is_known,
                                   article_to_internal_shard, article_to_sw_shard,
-                                  build_lineage_index,
+                                  build_lineage_index, resolve_signing_seed,
                                   SCOPE_INTERNAL, SCOPE_SW_ARTICLE)
 
     store = init_store()
@@ -84,9 +84,17 @@ def ingest(feeds: str, limit: int, max_requests: int | None, dry_run: bool):
     # default, but possible if dedup is bypassed later) chain via parent_shard_id.
     internal_lineage = build_lineage_index(store, SCOPE_INTERNAL)
     sw_lineage = build_lineage_index(store, SCOPE_SW_ARTICLE)
+    # Sign shards with the Ed25519 provenance key when one is configured.
+    # Opt-in: unconfigured environments write unsigned shards (see
+    # resolve_signing_seed / `zeitghost gen-signing-key`).
+    seed = resolve_signing_seed()
+    console.print("  Signing shards (ZEITGHOST_SIGNING_KEY configured)"
+                  if seed else "  [dim]No signing key — writing unsigned shards[/dim]")
     for a in analyzed:
-        article_to_internal_shard(a, store, lineage_index=internal_lineage)
-        article_to_sw_shard(a, store, lineage_index=sw_lineage)
+        article_to_internal_shard(a, store, lineage_index=internal_lineage,
+                                  signing_seed=seed)
+        article_to_sw_shard(a, store, lineage_index=sw_lineage,
+                            signing_seed=seed)
     console.print(f"  {len(analyzed) * 2} shards written "
                   f"(internal + sw:article)")
 
@@ -150,6 +158,54 @@ def analytics(output: str):
         output_dir=Path(output),
     )
     console.print(f"[green]Analytics page generated at {path}[/green]")
+
+
+@main.command(name="gen-signing-key")
+@click.option("--store/--no-store", "store_key", default=True,
+              help="Store the key in the OS keychain (default). --no-store "
+                   "only prints it, for manual provisioning on a headless host.")
+def gen_signing_key(store_key: bool):
+    """Generate an Ed25519 key for signing shards' provenance.
+
+    Shards written by `zeitghost ingest` are signed whenever ZEITGHOST_SIGNING_KEY
+    is resolvable (OS keychain or env var), stamping each with a verifiable
+    signature + `created_by` thumbprint. This mints a fresh 32-byte seed,
+    stores it in the keychain (unless --no-store), and prints the public-key
+    thumbprint — the signer identity `MemoryShard.verify()` checks against.
+
+    Record the thumbprint somewhere durable. The seed itself is secret: to run
+    the same identity on the headless us-ny1 builder, copy the printed seed into
+    a ZEITGHOST_SIGNING_KEY env var there (the keychain isn't available in the
+    container).
+    """
+    import os as _os
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+    from spiritwriter.fabric.shard import pubkey_thumbprint
+    from zeitghost.shards import SIGNING_KEY_NAME
+
+    seed = _os.urandom(32)  # a 32-byte Ed25519 seed
+    pub = (Ed25519PrivateKey.from_private_bytes(seed).public_key()
+           .public_bytes(encoding=serialization.Encoding.Raw,
+                         format=serialization.PublicFormat.Raw))
+    seed_hex = seed.hex()
+    console.print(f"[bold]Signer thumbprint:[/bold] {pubkey_thumbprint(pub)}")
+
+    stored = False
+    if store_key:
+        from spiritwriter.secrets import configure, set_api_key
+        configure(service_name="zeitghost")
+        stored = set_api_key(SIGNING_KEY_NAME, seed_hex)
+
+    if stored:
+        console.print(f"[green]Stored {SIGNING_KEY_NAME} in the OS keychain — "
+                      f"the next `zeitghost ingest` will sign its shards.[/green]")
+        console.print(f"[dim]seed (secret; for the prod env var): {seed_hex}[/dim]")
+    else:
+        if store_key:
+            console.print("[yellow]Keychain unavailable — key NOT stored.[/yellow]")
+        console.print("Provision it yourself (e.g. on the us-ny1 builder):")
+        console.print(f"  [bold]export {SIGNING_KEY_NAME}={seed_hex}[/bold]")
 
 
 @main.command(name="import-legacy")
