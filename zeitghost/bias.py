@@ -219,8 +219,14 @@ def _extract_json(text: str) -> dict | None:
         return None
 
 
-async def analyze_article(article: Article) -> AnalyzedArticle | None:
-    """Analyze one article — compute bias and generate both variants."""
+async def analyze_article(article: Article,
+                          stats: dict | None = None) -> AnalyzedArticle | None:
+    """Analyze one article — compute bias and generate both variants.
+
+    Pass a mutable `stats` dict to tally why articles are dropped — currently
+    the `no_score` reason (skipped for a missing/invalid bias_score). Lets
+    `analyze_batch` surface the count so a silent feed-drop is noticeable.
+    """
     provider = _get_provider()
     # Prefer the trafilatura-extracted body when present (richer context for
     # Claude); fall back to NewsAPI's terse description if body fetch failed.
@@ -245,6 +251,8 @@ async def analyze_article(article: Article) -> AnalyzedArticle | None:
             # would mislabel an unscored article as "center" (invariant #1).
             log.warning("Missing/invalid bias_score for '%s' — skipping",
                         article.title[:50])
+            if stats is not None:
+                stats["no_score"] = stats.get("no_score", 0) + 1
             return None
 
         left = data.get("variant_left", {}) or {}
@@ -268,11 +276,23 @@ async def analyze_article(article: Article) -> AnalyzedArticle | None:
 
 
 async def analyze_batch(articles: list[Article]) -> list[AnalyzedArticle]:
-    """Analyze a batch of articles. Skips any that fail to parse."""
+    """Analyze a batch of articles. Skips any that fail to parse.
+
+    Logs a WARNING with the count of articles dropped for a missing/invalid
+    bias_score — that path silently shrinks the feed (by design, vs. the old
+    default-fill), so the count surfaces an LLM regression that starts dropping
+    a chunk of articles. Logging propagates to the CLI's RichHandler, so it
+    shows on the operator's console during `zeitghost ingest`.
+    """
     results = []
+    stats: dict[str, int] = {}
     for article in articles:
-        analyzed = await analyze_article(article)
+        analyzed = await analyze_article(article, stats=stats)
         if analyzed is not None:
             results.append(analyzed)
     log.info("Analyzed %d articles, %d succeeded", len(articles), len(results))
+    n_unscored = stats.get("no_score", 0)
+    if n_unscored:
+        log.warning("%d article(s) skipped — no usable bias_score in the LLM "
+                    "response (not default-filled to center)", n_unscored)
     return results

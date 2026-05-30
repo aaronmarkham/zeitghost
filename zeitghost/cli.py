@@ -88,8 +88,9 @@ def ingest(feeds: str, limit: int, max_requests: int | None, dry_run: bool):
     # Opt-in: unconfigured environments write unsigned shards (see
     # resolve_signing_seed / `zeitghost gen-signing-key`).
     seed = resolve_signing_seed()
-    console.print("  Signing shards (ZEITGHOST_SIGNING_KEY configured)"
-                  if seed else "  [dim]No signing key — writing unsigned shards[/dim]")
+    if analyzed:
+        console.print("  Signing shards (ZEITGHOST_SIGNING_KEY configured)"
+                      if seed else "  [dim]No signing key — writing unsigned shards[/dim]")
     for a in analyzed:
         article_to_internal_shard(a, store, lineage_index=internal_lineage,
                                   signing_seed=seed)
@@ -164,7 +165,11 @@ def analytics(output: str):
 @click.option("--store/--no-store", "store_key", default=True,
               help="Store the key in the OS keychain (default). --no-store "
                    "only prints it, for manual provisioning on a headless host.")
-def gen_signing_key(store_key: bool):
+@click.option("--print-seed", is_flag=True,
+              help="Also echo the secret seed after a successful keychain store "
+                   "(for mirroring to the prod env var). --no-store always "
+                   "prints it; otherwise the seed stays off-screen by default.")
+def gen_signing_key(store_key: bool, print_seed: bool):
     """Generate an Ed25519 key for signing shards' provenance.
 
     Shards written by `zeitghost ingest` are signed whenever ZEITGHOST_SIGNING_KEY
@@ -173,10 +178,10 @@ def gen_signing_key(store_key: bool):
     stores it in the keychain (unless --no-store), and prints the public-key
     thumbprint — the signer identity `MemoryShard.verify()` checks against.
 
-    Record the thumbprint somewhere durable. The seed itself is secret: to run
-    the same identity on the headless us-ny1 builder, copy the printed seed into
-    a ZEITGHOST_SIGNING_KEY env var there (the keychain isn't available in the
-    container).
+    Record the thumbprint somewhere durable. The seed itself is secret and is
+    NOT echoed by default after a keychain store — pass --print-seed (or use
+    --no-store) to reveal it when you need to mirror the identity onto the
+    headless us-ny1 builder via a ZEITGHOST_SIGNING_KEY env var.
     """
     import os as _os
     from cryptography.hazmat.primitives import serialization
@@ -200,8 +205,14 @@ def gen_signing_key(store_key: bool):
     if stored:
         console.print(f"[green]Stored {SIGNING_KEY_NAME} in the OS keychain — "
                       f"the next `zeitghost ingest` will sign its shards.[/green]")
-        console.print(f"[dim]seed (secret; for the prod env var): {seed_hex}[/dim]")
+        if print_seed:
+            console.print(f"[dim]seed (secret; for the prod env var): {seed_hex}[/dim]")
+        else:
+            console.print("[dim]Seed kept off-screen. Re-run with --print-seed "
+                          "to reveal it for mirroring to prod.[/dim]")
     else:
+        # Not stored (--no-store, or keychain unavailable): the printed seed is
+        # the only copy, so it must be shown regardless of --print-seed.
         if store_key:
             console.print("[yellow]Keychain unavailable — key NOT stored.[/yellow]")
         console.print("Provision it yourself (e.g. on the us-ny1 builder):")

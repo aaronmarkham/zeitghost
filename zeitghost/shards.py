@@ -471,6 +471,10 @@ def load_articles_from_shards(store: ShardStore) -> list[AnalyzedArticle]:
             orphans.append(shard)
             continue
         cur = latest.get(ent)
+        # Strict `>` means equal timestamps (sub-second collision, or both "")
+        # keep the first shard `by_scope` yields — ties go to first-seen. This
+        # matches build_lineage_index's comparison, so the "latest" rendered
+        # here is the same shard its parent-chaining treats as the head.
         if cur is None or (shard.created_at or "") > (cur.created_at or ""):
             latest[ent] = shard
 

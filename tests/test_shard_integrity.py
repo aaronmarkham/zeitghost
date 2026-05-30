@@ -132,6 +132,50 @@ def test_shard_signed_with_seed_verifies_and_round_trips(tmp_path):
         assert shard.verify(pub) is True
 
 
+def test_tampered_signature_fails_verify(tmp_path):
+    """Flipping a byte of the signature must make verify() reject it — guards
+    against a future regression that signs the wrong payload."""
+    from cryptography.exceptions import InvalidSignature
+    from zeitghost.shards import (
+        init_store, article_to_internal_shard, SCOPE_INTERNAL,
+    )
+    seed = os.urandom(32)
+    pub = _pubkey(seed)
+    store = init_store(tmp_path / "shards")
+    article_to_internal_shard(_article("https://e.com/tamper"), store,
+                              signing_seed=seed)
+
+    [shard] = list(store.by_scope(SCOPE_INTERNAL))
+    # Corrupt one hex nibble of the signature (wraps so 'f' stays valid hex).
+    sig = shard.signature
+    flipped = ("e" if sig[0] != "e" else "d") + sig[1:]
+    shard.signature = flipped
+    with pytest.raises(InvalidSignature):
+        shard.verify(pub)
+
+
+# --- #5 end-to-end: analyze_article drops an unscored article --------------
+
+def test_analyze_article_returns_none_when_bias_score_missing(monkeypatch):
+    """End-to-end: when the LLM response omits bias_score, analyze_article
+    returns None (skip) rather than constructing a default-0.5 article."""
+    import asyncio
+    import zeitghost.bias as bias
+
+    class _FakeProvider:
+        async def query(self, prompt, model=None):
+            # Valid JSON, variants present, but NO bias_score key.
+            return ('{"bias_label": "center", '
+                    '"variant_left": {"title": "L", "summary": "ls"}, '
+                    '"variant_right": {"title": "R", "summary": "rs"}}')
+
+    monkeypatch.setattr(bias, "_get_provider", lambda: _FakeProvider())
+
+    art = Article(title="T", url="https://e.com/no-score", summary="s",
+                  source_name="src", published="2026-05-12T00:00:00+00:00")
+    assert asyncio.run(bias.analyze_article(art)) is None
+
+
 # --- resolve_signing_seed --------------------------------------------------
 
 def test_resolve_signing_seed_from_env(monkeypatch):
