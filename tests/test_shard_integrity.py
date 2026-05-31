@@ -265,26 +265,49 @@ def test_emitter_stamps_trace_ref_and_chain_verifies(tmp_path):
     assert trace_path.exists()
 
 
-def test_emitter_emits_shard_superseded_on_revision(tmp_path):
+@pytest.mark.parametrize("writer_name, scope_attr", [
+    ("article_to_internal_shard", "SCOPE_INTERNAL"),
+    ("article_to_sw_shard", "SCOPE_SW_ARTICLE"),
+])
+def test_emitter_emits_shard_superseded_on_revision(tmp_path, writer_name, scope_attr):
     """Re-analysis (a write that chains onto a parent) emits shard_superseded
-    linking new→old — the event the load-side dedup has no signal for yet."""
-    from zeitghost.shards import (
-        init_store, init_trace_emitter, article_to_internal_shard,
-        build_lineage_index, SCOPE_INTERNAL,
-    )
-    store = init_store(tmp_path / "shards")
-    emitter, _ = init_trace_emitter(store, run_id="ingest-test-rev")
+    linking new→old — the event the load-side dedup has no signal for yet.
+    Same path for both shard scopes."""
+    import zeitghost.shards as sh
+    writer = getattr(sh, writer_name)
+    scope = getattr(sh, scope_attr)
+
+    store = sh.init_store(tmp_path / "shards")
+    emitter, _ = sh.init_trace_emitter(store, run_id="ingest-test-rev")
     url = "https://e.com/revised"
 
-    first = article_to_internal_shard(_article(url, 0.3), store, emitter=emitter)
-    a2 = _article(url, 0.8)
-    lineage = build_lineage_index(store, SCOPE_INTERNAL)
-    second = article_to_internal_shard(a2, store, lineage_index=lineage, emitter=emitter)
+    first = writer(_article(url, 0.3), store, emitter=emitter)
+    lineage = sh.build_lineage_index(store, scope)
+    second = writer(_article(url, 0.8), store, lineage_index=lineage, emitter=emitter)
 
     types = [e["type"] for e in emitter.get_events()]
     assert types == ["shard_created", "shard_created", "shard_superseded"]
     sup = emitter.get_events()[-1]
     assert sup["old_shard_id"] == first and sup["new_shard_id"] == second
+
+
+def test_trace_emit_failure_does_not_block_shard_write(tmp_path):
+    """Fail-open: if the emitter raises mid-write, the shard is still persisted
+    (untraced) rather than lost."""
+    from zeitghost.shards import (
+        init_store, article_to_internal_shard, SCOPE_INTERNAL,
+    )
+
+    class _BoomEmitter:
+        def shard_created(self, *a, **k):
+            raise OSError("disk full")
+
+    store = init_store(tmp_path / "shards")
+    sid = article_to_internal_shard(_article("https://e.com/boom"), store,
+                                    emitter=_BoomEmitter())
+    [shard] = list(store.by_scope(SCOPE_INTERNAL))
+    assert shard.shard_id == sid          # shard landed
+    assert shard.trace_ref is None        # but untraced, not a dangling ref
 
 
 def test_trace_ref_and_signer_round_trip_to_article(tmp_path):

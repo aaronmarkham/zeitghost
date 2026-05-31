@@ -122,9 +122,13 @@ def ingest(feeds: str, limit: int, max_requests: int | None, dry_run: bool,
     if emitter is not None:
         from spiritwriter.fabric.emitter import verify_chain
         events = emitter.get_events()
-        ok = verify_chain(events)
-        console.print(f"  Trace: {len(events)} events → traces/{trace_path.name} "
-                      f"(chain {'verified' if ok else '[red]BROKEN[/red]'})")
+        console.print(f"  Trace: {len(events)} events recorded → "
+                      f"traces/{trace_path.name}")
+        # Sanity self-check only — verifying a chain we just wrote always
+        # passes barring disk corruption. Real provenance auditing of an old
+        # run is a future `verify-trace <run_id>` command, not this line.
+        if not verify_chain(events):
+            console.print("  [red]Warning: trace chain failed self-verification[/red]")
 
 
 @main.command()

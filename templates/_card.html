@@ -151,7 +151,10 @@
             <dt>Trace</dt>
             <dd>
                 {% if article.trace_ref %}
-                <span class="hash" title="{{ article.trace_ref }}">{{ article.trace_ref[:24] }}<span class="hash-tail">&hellip;</span></span>
+                {# trace_ref is chain:<run_id>#<event_hash> — show the run (the
+                   traces/<run_id>.jsonl filename) and the event-hash prefix. #}
+                {% set _t = article.trace_ref.split('#') %}
+                <span class="hash" title="{{ article.trace_ref }}">{{ _t[0] | replace('chain:', '') }}<span class="muted"> &middot; event {{ _t[1][:8] if _t | length > 1 else '?' }}</span></span>
                 {% else %}
                 <span class="muted">—</span>
                 {% endif %}
