@@ -53,6 +53,8 @@ class AnalyzedArticle:
     shard_atom_kinds: dict[str, int] = field(default_factory=dict)
     model: str = ""            # LLM model that produced bias + variants
     agent: str = ""            # zeitghost/<ver> sw_core/<ver>
+    signed_by: str = ""        # Ed25519 signer thumbprint (shard.created_by)
+    trace_ref: str = ""        # chain:<run_id>#<event_hash> of the shard_created event
 
     @property
     def permalink_slug(self) -> str:
