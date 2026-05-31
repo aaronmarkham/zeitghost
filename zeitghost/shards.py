@@ -65,6 +65,21 @@ def resolve_signing_seed() -> bytes | None:
     return seed
 
 
+def signing_required(flag: bool = False) -> bool:
+    """Whether ingest must fail-closed when no signing key is configured.
+
+    True if the `--require-signing` flag is passed OR `ZEITGHOST_REQUIRE_SIGNING`
+    is truthy. Prod (us-ny1) sets the env var once its `ZEITGHOST_SIGNING_KEY`
+    is provisioned, so an accidentally-cleared key fails the run loudly instead
+    of silently writing unsigned shards. Local dev and CI leave both unset, so
+    signing stays opt-in there.
+    """
+    if flag:
+        return True
+    val = os.environ.get("ZEITGHOST_REQUIRE_SIGNING", "").strip().lower()
+    return val in ("1", "true", "yes", "on")
+
+
 def _maybe_sign(shard: MemoryShard, signing_seed: bytes | None) -> None:
     """Sign `shard` in place when a seed is supplied (sets `signature` and
     `created_by`). The signature covers {atoms, scope, origin, …} but NOT the

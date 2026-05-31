@@ -34,6 +34,10 @@ services:
     environment:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       NEWS_API_KEY: ${NEWS_API_KEY:-}
+      # Shard signing — seed (secret) + fail-closed switch. Values live in .env
+      # (rendered 0600 by Ansible from the vault); only the references are here.
+      ZEITGHOST_SIGNING_KEY: ${ZEITGHOST_SIGNING_KEY:-}
+      ZEITGHOST_REQUIRE_SIGNING: ${ZEITGHOST_REQUIRE_SIGNING:-0}
       ZEITGHOST_FEEDS: ${ZEITGHOST_FEEDS:-feeds/newsapi.yaml}
       ZEITGHOST_INTERVAL: ${ZEITGHOST_INTERVAL:-3600}
       ZEITGHOST_INGEST_LIMIT: ${ZEITGHOST_INGEST_LIMIT:-50}

@@ -199,3 +199,28 @@ def test_resolve_signing_seed_malformed_is_none(monkeypatch):
     assert resolve_signing_seed() is None
     monkeypatch.setenv(SIGNING_KEY_NAME, "ab")  # valid hex, but 1 byte ≠ 32
     assert resolve_signing_seed() is None
+
+
+# --- signing_required (prod fail-closed switch) ----------------------------
+
+def test_signing_required_off_by_default(monkeypatch):
+    from zeitghost.shards import signing_required
+    monkeypatch.delenv("ZEITGHOST_REQUIRE_SIGNING", raising=False)
+    assert signing_required() is False
+    assert signing_required(flag=False) is False
+
+
+def test_signing_required_flag_wins(monkeypatch):
+    from zeitghost.shards import signing_required
+    monkeypatch.delenv("ZEITGHOST_REQUIRE_SIGNING", raising=False)
+    assert signing_required(flag=True) is True
+
+
+def test_signing_required_env_truthy_variants(monkeypatch):
+    from zeitghost.shards import signing_required
+    for truthy in ("1", "true", "TRUE", "yes", "on"):
+        monkeypatch.setenv("ZEITGHOST_REQUIRE_SIGNING", truthy)
+        assert signing_required() is True, truthy
+    for falsy in ("0", "false", "no", "", "off"):
+        monkeypatch.setenv("ZEITGHOST_REQUIRE_SIGNING", falsy)
+        assert signing_required() is False, falsy

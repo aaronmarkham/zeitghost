@@ -36,16 +36,34 @@ def main(verbose: bool):
               help="Cap NewsAPI requests this run (default: remaining quota)")
 @click.option("--dry-run", is_flag=True,
               help="Fetch + analyze but skip writing shards")
-def ingest(feeds: str, limit: int, max_requests: int | None, dry_run: bool):
+@click.option("--require-signing", is_flag=True,
+              help="Fail if no valid signing key is configured, instead of "
+                   "writing unsigned shards. Also enabled by "
+                   "ZEITGHOST_REQUIRE_SIGNING=1 (prod sets this; local/CI leave "
+                   "it off). See `zeitghost gen-signing-key`.")
+def ingest(feeds: str, limit: int, max_requests: int | None, dry_run: bool,
+           require_signing: bool):
     """Fetch new articles from NewsAPI, analyze with Claude, write shards."""
     from zeitghost.fetcher import fetch_all, enrich_with_bodies
     from zeitghost.bias import analyze_batch
     from zeitghost.shards import (init_store, known_url_entities, is_known,
                                   article_to_internal_shard, article_to_sw_shard,
                                   build_lineage_index, resolve_signing_seed,
+                                  signing_required, SIGNING_KEY_NAME,
                                   SCOPE_INTERNAL, SCOPE_SW_ARTICLE)
 
     store = init_store()
+
+    # Resolve the signing key up front so a "signing required but unconfigured"
+    # deploy fails fast — before spending any NewsAPI quota or Claude calls —
+    # rather than after fetching and analyzing a whole batch.
+    seed = resolve_signing_seed()
+    if seed is None and signing_required(require_signing):
+        raise click.ClickException(
+            f"Signing is required but no valid {SIGNING_KEY_NAME} is configured. "
+            f"Provision the key (see `zeitghost gen-signing-key`), or drop "
+            f"--require-signing / unset ZEITGHOST_REQUIRE_SIGNING for unsigned runs."
+        )
     state_dir = Path(store.path).parent if hasattr(store, "path") else Path.home() / ".zeitghost"
 
     console.print(f"[bold]Fetching from {feeds}[/bold]")
@@ -84,10 +102,8 @@ def ingest(feeds: str, limit: int, max_requests: int | None, dry_run: bool):
     # default, but possible if dedup is bypassed later) chain via parent_shard_id.
     internal_lineage = build_lineage_index(store, SCOPE_INTERNAL)
     sw_lineage = build_lineage_index(store, SCOPE_SW_ARTICLE)
-    # Sign shards with the Ed25519 provenance key when one is configured.
-    # Opt-in: unconfigured environments write unsigned shards (see
-    # resolve_signing_seed / `zeitghost gen-signing-key`).
-    seed = resolve_signing_seed()
+    # `seed` was resolved up front (for the fail-fast require check). Signing is
+    # opt-in: when it's None the shards are written unsigned.
     if analyzed:
         console.print("  Signing shards (ZEITGHOST_SIGNING_KEY configured)"
                       if seed else "  [dim]No signing key — writing unsigned shards[/dim]")
