@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Zeitghost is a spiritwriter-powered static site generator for national bias-analyzed news. It fetches NewsAPI articles, analyzes political bias with Claude, generates BOTH left- and right-leaning rewrites per article, and builds a static site with a client-side bias slider that swaps which variant is visible.
 
-Sister project to perseus-news (regional/enforcement focus, single right-leaning variant). Both share the `sw:article` shard format. Zeitghost serves `news.spiritwriter.ai` from us-ny1.
+Sister project to perseus-news (a private sibling — regional/enforcement focus, single right-leaning variant). Both share the `sw:article` shard format. Zeitghost serves `news.spiritwriter.ai` from us-ny1.
 
 ## Architecture
 

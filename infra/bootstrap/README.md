@@ -9,8 +9,8 @@ node, idempotent, two-phase.
 1. `apt update` + base packages (`curl`, `rsync`, `ufw`, `unattended-upgrades`, ...)
 2. Sets the system hostname to `NODE_NAME` (and updates `/etc/hosts`) — fresh
    Vultr/DO/etc. images come up with generic names like `vultr` or `ubuntu`
-3. Creates the `frionode` deploy user (cross-project convention) with `sudo NOPASSWD`
-4. Installs the deploy public key into `~frionode/.ssh/authorized_keys`
+3. Creates the `deploy` user (cross-project convention) with `sudo NOPASSWD`
+4. Installs the deploy public key into `~deploy/.ssh/authorized_keys`
 5. Installs Tailscale and authenticates, registering as `NODE_NAME`.
    `--ssh` is **off** by default — when on, Tailscale intercepts all port-22
    traffic from tailnet peers and gates by the tailnet policy file, which
@@ -32,7 +32,7 @@ don't lock yourself out. Once you've verified Tailscale SSH works, re-run with
 | `NODE_NAME`         | yes               | Cross-node-convention name (`us-ny1`, `us-tx1`, `nl1`). Sets system + Tailscale hostname. Lowercase, digits, hyphens only. |
 | `DEPLOY_PUBKEY`     | yes               | Full SSH public key string. Public half of the `DEPLOY_SSH_KEY` GitHub secret used by CI. |
 | `TAILSCALE_AUTHKEY` | first run only    | Generate at https://login.tailscale.com/admin/settings/keys (reusable or one-shot, tagged `tag:server` if you have ACLs). |
-| `DEPLOY_USER`       | optional          | Default `frionode` — keep this unless you have a strong reason. |
+| `DEPLOY_USER`       | optional          | Default `deploy` — keep this unless you have a strong reason. Must match the `DEPLOY_USER` CI secret the deploy workflow uses. |
 | `SWAP_GB`           | optional          | Default `2`. Skipped if any swap is already configured. |
 | `TAILSCALE_SSH`     | optional          | Default `0` (off). Set to `1` to enable Tailscale SSH (`--ssh`). When ON, Tailscale intercepts ALL port-22 tailnet traffic and gates it by the tailnet policy file — so CI/ansible deploys also need a matching `ssh` ACL block. Leave OFF unless you've added that. |
 
@@ -52,8 +52,8 @@ bash /root/bootstrap.sh
 Verify from your laptop:
 
 ```bash
-tailscale ssh frionode@<node-name>      # Tailscale SSH (works even after harden)
-ssh frionode@<node-public-ip>           # plain SSH with the deploy key
+tailscale ssh deploy@<node-name>        # Tailscale SSH (works even after harden)
+ssh deploy@<node-public-ip>             # plain SSH with the deploy key
 ```
 
 If both work, harden:

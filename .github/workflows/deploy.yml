@@ -123,6 +123,11 @@ jobs:
         working-directory: infra/ansible
         env:
           ANSIBLE_HOST_KEY_CHECKING: "false"
+          # Per-node identity — the inventory reads these via lookup('env', ...)
+          # so the committed file carries no real host/user. DEPLOY_USER falls
+          # back to "deploy" in the inventory if unset.
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
           VAULT_ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           VAULT_NEWS_API_KEY: ${{ secrets.NEWS_API_KEY }}
           # Ed25519 shard-signing seed (64 hex chars). Set the repo secret with
@@ -139,11 +144,13 @@ jobs:
             -e "zeitghost_commit_sha=${{ github.sha }}"
 
       - name: Health check
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
         run: |
           # Give the builder a moment to render the initial site
           sleep 10
           for i in $(seq 1 10); do
-            RESP=$(curl -sf "http://100.120.169.33/healthz" 2>/dev/null || echo "")
+            RESP=$(curl -sf "http://${DEPLOY_HOST}/healthz" 2>/dev/null || echo "")
             if echo "$RESP" | grep -q "ok"; then
               echo "Health check passed (attempt $i)"
               exit 0
