@@ -3,17 +3,17 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>spiritwriter — a fabric for what your agents remember</title>
-<meta name="description" content="Content-addressed agent memory for AI systems. Shards that grow without losing history. Hash-chained traces. Encryption you can hand off without handing over keys. A library, not a service." />
-<meta property="og:title" content="spiritwriter — a fabric for what your agents remember" />
-<meta property="og:description" content="Content-addressed agent memory: shards, traces, entitlements, jobs. Apache 2.0." />
+<title>spiritwriter — agent memory you own</title>
+<meta name="description" content="Local-first agent memory, provable traces, scoped delegation, and deterministic entity resolution. A library you drop under whatever agent stack you run — your data never leaves your machine. No service, no custody, no rent. Apache 2.0." />
+<meta property="og:title" content="spiritwriter — agent memory you own" />
+<meta property="og:description" content="Durable memory, provable traces, scoped delegation, entity resolution. Local-first, no custody, no rent. Apache 2.0." />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://spiritwriter.ai/" />
 <meta property="og:image" content="https://spiritwriter.ai/static/images/spirit-animals/spirit.svg" />
 <meta property="og:site_name" content="spiritwriter" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="spiritwriter — a fabric for what your agents remember" />
-<meta name="twitter:description" content="Content-addressed agent memory: shards, traces, entitlements, jobs. Apache 2.0." />
+<meta name="twitter:title" content="spiritwriter — agent memory you own" />
+<meta name="twitter:description" content="Durable memory, provable traces, scoped delegation, entity resolution. Local-first, no custody, no rent. Apache 2.0." />
 <meta name="twitter:image" content="https://spiritwriter.ai/static/images/spirit-animals/spirit.svg" />
 <link rel="canonical" href="https://spiritwriter.ai/" />
 <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
@@ -874,6 +874,155 @@
   @media (prefers-reduced-motion: reduce) {
     .hero > * { animation: none; opacity: 1; transform: none; }
   }
+
+  /* ----- hero: see-it-running line ----- */
+  .see-running {
+    margin-top: 1.15rem;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    color: var(--ink-faint);
+  }
+  .see-running a { color: var(--ink-soft); text-decoration-color: var(--rule); }
+  .see-running a:hover { color: var(--seal); }
+
+  /* ----- section lede (intro paragraph under a head) ----- */
+  .section-lede {
+    max-width: 62ch;
+    margin: 0 0 2.2rem;
+    font-family: var(--display);
+    font-style: italic;
+    font-variation-settings: "opsz" 60, "SOFT" 80, "wght" 350;
+    font-size: clamp(1.2rem, 2vw, 1.5rem);
+    line-height: 1.35;
+    color: var(--ink);
+  }
+
+  /* ----- substrate stack diagram (the key asset) ----- */
+  .stack {
+    margin: 0;
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 18px 48px -16px rgba(26, 22, 18, 0.18);
+    font-family: var(--mono);
+  }
+  .stack .layer {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 1rem;
+    align-items: baseline;
+    padding: 1.05rem 1.3rem;
+  }
+  .stack .byo {
+    background: var(--parchment-light);
+    border-bottom: 1px dashed var(--rule);
+  }
+  .stack .byo .name { color: var(--ink-soft); font-size: 0.9rem; }
+  .stack .byo .detail { color: var(--whisper); font-size: 0.72rem; }
+  .stack .byo .tag {
+    font-size: 0.58rem; letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--whisper); white-space: nowrap;
+  }
+  .stack .sw {
+    background: var(--ink);
+    color: var(--parchment-light);
+    display: block;
+    padding: 1.4rem 1.3rem;
+  }
+  .stack .sw .name {
+    font-family: var(--display); font-style: italic;
+    font-variation-settings: "opsz" 36, "SOFT" 100, "wght" 400;
+    font-size: 1.4rem; color: var(--parchment-light); line-height: 1;
+  }
+  .stack .sw .detail {
+    display: block; margin-top: 0.5rem;
+    font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--highlight);
+  }
+  .stack-note {
+    margin: 1.1rem 0 0;
+    font-family: var(--display); font-style: italic;
+    font-variation-settings: "opsz" 36, "SOFT" 100, "wght" 360;
+    font-size: 1.05rem; line-height: 1.4; color: var(--ink-soft);
+  }
+
+  /* ----- proof: two extremes of the trust dial ----- */
+  .proof {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(1.4rem, 3vw, 2.4rem);
+  }
+  @media (max-width: 880px) { .proof { grid-template-columns: 1fr; } }
+  .proof-card {
+    background: var(--parchment-light);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: 1.6rem 1.5rem;
+    display: grid;
+    grid-template-rows: auto auto auto 1fr auto;
+    gap: 0.6rem;
+  }
+  .proof-card.sealed { border-top: 3px solid var(--thread); }
+  .proof-card.public { border-top: 3px solid var(--seal); }
+  .proof-card .posture {
+    font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+  .proof-card.sealed .posture { color: var(--thread); }
+  .proof-card.public .posture { color: var(--seal); }
+  .proof-card .domain {
+    font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.12em;
+    color: var(--ink-faint);
+  }
+  .proof-card h3 {
+    margin: 0;
+    font-family: var(--display);
+    font-variation-settings: "opsz" 36, "SOFT" 60, "wght" 460;
+    font-weight: 500; font-size: 1.2rem; color: var(--ink);
+  }
+  .proof-card h3 em { font-style: italic; color: var(--seal); font-variation-settings: "opsz" 36, "SOFT" 100, "wght" 380; }
+  .proof-card.sealed h3 em { color: var(--thread); }
+  .proof-card p { margin: 0; font-size: 0.95rem; color: var(--ink-soft); line-height: 1.55; }
+  .proof-card .visit {
+    font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--ink); text-decoration: none;
+    border-bottom: 1px solid var(--rule); padding-bottom: 0.18rem;
+    width: fit-content; align-self: end;
+  }
+  .proof-card .visit:hover { color: var(--seal); border-bottom-color: var(--seal); }
+  .proof-caption {
+    text-align: center; margin: 1.6rem 0 0;
+    font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.08em;
+    color: var(--ink-faint);
+  }
+
+  /* ----- "what it ends" problem → solution table ----- */
+  .ends-table {
+    width: 100%;
+    border-collapse: collapse;
+    border-top: 1px solid var(--rule);
+  }
+  .ends-table td {
+    padding: 1.05rem 0.7rem;
+    border-bottom: 1px solid var(--rule-soft);
+    vertical-align: top;
+    font-size: 0.98rem;
+    line-height: 1.5;
+  }
+  .ends-table td.problem {
+    width: 42%;
+    font-family: var(--display); font-style: italic;
+    font-variation-settings: "opsz" 36, "SOFT" 80, "wght" 360;
+    color: var(--ink-faint);
+  }
+  .ends-table td.gives { color: var(--ink-soft); }
+  .ends-table td.gives strong { color: var(--ink); font-weight: 600; }
+  @media (max-width: 620px) {
+    .ends-table td { display: block; }
+    .ends-table td.problem { width: auto; padding-bottom: 0.3rem; border-bottom: none; }
+    .ends-table td.gives { padding-top: 0.3rem; }
+  }
 </style>
 </head>
 <body>
@@ -882,8 +1031,8 @@
   <div class="topbar-inner">
     <span>spiritwriter / library no. <span style="color:var(--seal);">vi</span></span>
     <div class="right">
-      <span>content-addressed memory for agentic systems</span>
-      <span>verified · sha-256</span>
+      <span>local-first memory for agents — you own it</span>
+      <span>no service · no custody</span>
       <span>apache 2.0</span>
     </div>
   </div>
@@ -892,11 +1041,11 @@
 <nav class="primary">
   <a href="/" class="wordmark">spiritwriter{% if sw_core_version %}<sup>v{{ sw_core_version }}</sup>{% endif %}</a>
   <ul>
-    <li><a href="#manifesto">Manifesto</a></li>
-    <li><a href="#primitives">Primitives</a></li>
-    <li><a href="#code">Code</a></li>
-    <li><a href="#bear">Resolution</a></li>
-    <li><a href="#used-by">Used by</a></li>
+    <li><a href="#ache">Why</a></li>
+    <li><a href="#substrate">Substrate</a></li>
+    <li><a href="#proof">Proof</a></li>
+    <li><a href="#adopt">Adopt</a></li>
+    <li><a href="#numbers">Numbers</a></li>
     <li><a class="gh" href="https://github.com/aaronmarkham/spiritwriter-core">GitHub ↗</a></li>
   </ul>
 </nav>
@@ -915,31 +1064,31 @@
     </div>
 
     <h1 class="display">
-      A <em>fabric</em> for
-      <span class="breakw">what your agents</span>
-      <span class="breakw">remember.</span>
+      Agent memory
+      <span class="breakw"><em>you own.</em></span>
     </h1>
 
     <div class="hero-grid">
       <div>
         <p class="hero-lede">
-          Content-addressed agent memory for AI systems. Shards that grow without losing history. Hash-chained traces that prove what ran. Encryption you can hand off without handing over keys. <em>A library, not a service.</em>
+          Durable memory, provable traces, scoped delegation, and entity resolution — a <em>local-first</em> library you drop under whatever agent stack you already run. Your data never leaves your machine. No service, no custody, no rent.
         </p>
         <div class="cta-row">
-          <a class="seal-button" href="https://github.com/aaronmarkham/spiritwriter-core">
-            <span>Open the source</span>
-            <span class="arr">→</span>
-          </a>
-          <button type="button" class="copy-install" id="copyInstall" aria-label="Copy install command">
+          <button type="button" class="copy-install" aria-label="Copy install command">
             <span class="prompt">$</span>
             <span class="label">pip&nbsp;install&nbsp;spiritwriter-core</span>
             <span class="copied">copied</span>
           </button>
+          <a class="seal-button" href="https://github.com/aaronmarkham/spiritwriter-core">
+            <span>Open the source</span>
+            <span class="arr">→</span>
+          </a>
         </div>
+        <p class="see-running">See it running → <a href="https://frio.help">frio.help</a> &middot; <a href="https://news.spiritwriter.ai">news.spiritwriter.ai</a></p>
       </div>
 
       <aside class="hero-marginalia">
-        <em>Spirit</em> as in <em>spiritus</em> — that which animates. Spiritwriter writes the persistent layer beneath the agent: what was learned, when, by whom, under what authority. The substrate, not the surface.
+        Show everything, or prove nothing leaked — <em>same code</em>. The trust posture is one setting, dialed from fully public and provable to fully private and zero-knowledge.
       </aside>
     </div>
   </section>
@@ -947,24 +1096,24 @@
   <!-- ============================================================
        MANIFESTO
        ============================================================ -->
-  <section class="spread" id="manifesto">
+  <section class="spread" id="ache">
     <div class="section-head reveal">
       <div class="roman">I.</div>
-      <h2>The premise, <em>plainly stated.</em></h2>
-      <div class="folio">folio i — manifesto</div>
+      <h2>You've built <em>this</em> before.</h2>
+      <div class="folio">folio i — the ache</div>
     </div>
 
     <div class="manifesto reveal">
       <div class="left">
-        <p class="lede">An agent that cannot remember what it learned, or prove what it did, is not infrastructure. It is a sketch.</p>
-        <div class="signature">— filed under <span style="color:var(--seal)">/fabric</span></div>
+        <p class="lede">There's no standard library for the layer beneath the agent. So you keep rebuilding it.</p>
+        <div class="signature">— filed under <span style="color:var(--seal)">/substrate</span></div>
       </div>
       <div class="body">
-        <p>Most memory systems for AI either embed everything into a vector and lose the lineage, or they bolt on a database and surrender locality, ownership, and proof. <strong>Spiritwriter takes the older, harder route.</strong> Knowledge is broken into atoms with explicit fields. Atoms compose into shards. Shards are addressed by the hash of their contents, so identical content from different agents resolves to the same record — no duplicates, no drift.</p>
+        <p>Every agentic app re-solves the same problems. Where does what the agent learned live — and how do you keep it from drifting into contradiction? How do you hand a sub-task to another agent without handing over the keys to everything? And when something breaks three steps back, can you <strong>prove</strong> what actually happened?</p>
 
-        <p>Above the shards: <strong>traces</strong>. Every step an agent takes is appended to a hash-chained log; tampering with one entry breaks the chain after it. <strong>Entitlements</strong> let you delegate work to a sub-agent without surrendering master keys. <strong>Encryption</strong> comes in two postures, picked by who you don't trust. And <strong>entity resolution</strong> works by defining fields, not surface forms — so "Bear" the dog never silently merges with "Bear" the brand.</p>
+        <p>So you rebuild the glue for each app, slightly different every time. Or you eat the misalignments, the delegation failures, the memory drift. Or you rent a managed service that takes custody of your data <em>and</em> your latency budget.</p>
 
-        <p>It is a library, not a service. One <code style="font-family:var(--mono);font-size:0.85em;background:var(--parchment-deep);padding:0.05em 0.35em;border-radius:3px;">pip install</code>, no daemon, no vector store to host, no GPU. The artifact <em>is</em> the registry — version-controlled, emailed, restored from a backup like any other file.</p>
+        <p>Few teams do provable tracing or scoped entitlements without standing up heavy infrastructure. The layer <strong>beneath</strong> the agent has been left to improvisation — re-glued in every codebase, owned by none of them.</p>
       </div>
     </div>
   </section>
@@ -972,94 +1121,43 @@
   <!-- ============================================================
        PRIMITIVES
        ============================================================ -->
-  <section class="spread" id="primitives">
+  <section class="spread" id="substrate">
     <div class="section-head reveal">
       <div class="roman">II.</div>
-      <h2>Primitives, in <em>order of use.</em></h2>
-      <div class="folio">folio ii — index</div>
+      <h2>One substrate. <em>Trust is a dial.</em></h2>
+      <div class="folio">folio ii — the idea</div>
     </div>
 
-    <div class="primitives">
-      <article class="primitive reveal">
-        <div class="num">i</div>
-        <div>
-          <h3>Memory <em>Shards</em></h3>
-          <p>Knowledge that grows without losing history. New observations supersede old via lineage links; identical content from different agents dedupes into a single record. Decay classes prune what shouldn't outlive its purpose.</p>
-          <div class="meta"><span class="tick">●</span><span>sha-256 over atoms + scope + origin</span></div>
-        </div>
-      </article>
+    <div class="code-spread">
+      <div class="code-narrative reveal">
+        <h3>The layer your stack is missing.</h3>
+        <p>spiritwriter is content-addressed memory, hash-chained traces, scoped entitlements, and deterministic entity resolution — composable primitives you dial from <strong>fully public and provable</strong> to <strong>fully private and zero-knowledge</strong> by changing one setting.</p>
+        <p>Bring your own everything-else. spiritwriter handles what those layers leave out.</p>
+        <ul>
+          <li><span class="k">memory</span><span>content-addressed shards with lineage + decay.</span></li>
+          <li><span class="k">provenance</span><span>hash-chained, signable traces.</span></li>
+          <li><span class="k">delegation</span><span>scoped entitlements, enforced before decrypt.</span></li>
+          <li><span class="k">resolution</span><span>deterministic entity IDs, no embeddings.</span></li>
+        </ul>
+      </div>
 
-      <article class="primitive reveal">
-        <div class="num">ii</div>
-        <div>
-          <h3>The <em>Shard Store</em></h3>
-          <p>Local-first storage on disk; transparently fetches missing shards from a network when one is configured. Named refs handle the "latest version of X" pattern without breaking content addressing.</p>
-          <div class="meta"><span class="tick">●</span><span>git-style object layout · optional ipfs L2</span></div>
-        </div>
-      </article>
-
-      <article class="primitive reveal">
-        <div class="num">iii</div>
-        <div>
-          <h3><em>Encryption,</em> two postures</h3>
-          <p>AES-256-GCM when the operator and key-holder cooperate. NaCl sealed boxes when the operator must <em>not</em> see content — multi-tenant hosting, source protection, zero-knowledge monitoring. Pick by who you don't trust.</p>
-          <div class="meta"><span class="tick">●</span><span>aes-gcm · nacl · ed25519</span></div>
-        </div>
-      </article>
-
-      <article class="primitive reveal">
-        <div class="num">iv</div>
-        <div>
-          <h3><em>Entitlements</em></h3>
-          <p>Delegate scoped access to a sub-agent without handing over master keys. Tokens bundle decryption keys, scope patterns, capabilities, and budget; the store enforces every constraint before decrypting.</p>
-          <div class="meta"><span class="tick">●</span><span>bearer · scoped · budgeted</span></div>
-        </div>
-      </article>
-
-      <article class="primitive reveal">
-        <div class="num">v</div>
-        <div>
-          <h3>Delegated <em>Jobs</em></h3>
-          <p>Package encrypted content + task + entitlement into one unit of sub-agent work. The orchestrator hands the package over; the sub-agent hydrates, executes, returns a result shard. Every step traced.</p>
-          <div class="meta"><span class="tick">●</span><span>jobspec · package · hydrate · settle</span></div>
-        </div>
-      </article>
-
-      <article class="primitive reveal">
-        <div class="num">vi</div>
-        <div>
-          <h3>Entity <em>resolution</em></h3>
-          <p>Tell entities apart when names collide ("Bear" the dog vs. "Bear" the brand) and merge them when surface forms diverge ("Carlos Martinez" vs. "MARTINEZ, CARLOS A"). Same engine, both directions. No graph database to operate, no embedding service to call — define your identifying fields, hand in records, get canonical IDs back.</p>
-          <div class="meta"><span class="tick">●</span><span>sqlite-backed · domain-agnostic · zero-infrastructure</span></div>
-        </div>
-      </article>
-
-      <article class="primitive reveal">
-        <div class="num">vii</div>
-        <div>
-          <h3><em>Tracing</em></h3>
-          <p>Replay exactly what an agent did, prove nothing's been edited, render the run as workflow / genealogy / multi-agent diagrams. Hash-chained JSONL with optional Ed25519 signing.</p>
-          <div class="meta"><span class="tick">●</span><span>jsonl · chained · signable</span></div>
-        </div>
-      </article>
-
-      <article class="primitive reveal">
-        <div class="num">viii</div>
-        <div>
-          <h3><em>Audit</em></h3>
-          <p>Tamper-evident security audits for Android APKs. Inputs, evidence, findings, and final report bound into a hash-chained trace plus a self-hashing witness — anyone with the APK can re-run verification offline.</p>
-          <div class="meta"><span class="tick">●</span><span>traced · witnessed · re-runnable</span></div>
-        </div>
-      </article>
-
-      <article class="primitive reveal">
-        <div class="num">ix</div>
-        <div>
-          <h3>Shingled <em>extraction</em></h3>
-          <p>Turn long-form text into atoms without losing facts at chunk boundaries. Overlapping windows + multi-pass extraction; only atoms that appear across multiple passes survive. The result feeds the shard store and the entity-resolution engine: extract once, resolve continuously.</p>
-          <div class="meta"><span class="tick">●</span><span>overlapping windows · n-of-k voting · checkpoint-resumable</span></div>
-        </div>
-      </article>
+      <div class="reveal">
+        <figure class="stack" aria-label="Where spiritwriter sits in your stack">
+          <div class="layer byo">
+            <div><span class="name">your orchestrator</span> <span class="detail">LangGraph · CrewAI · a raw loop</span></div>
+            <span class="tag">bring your own ↑</span>
+          </div>
+          <div class="layer byo">
+            <div><span class="name">your retriever</span> <span class="detail">vector DB · RAG · full-text</span></div>
+            <span class="tag">bring your own ↑</span>
+          </div>
+          <div class="layer sw">
+            <span class="name">spiritwriter</span>
+            <span class="detail">memory · provenance · delegation · resolution</span>
+          </div>
+        </figure>
+        <p class="stack-note">It's not an agent framework, and it's not a vector database. It's what those sit on.</p>
+      </div>
     </div>
   </section>
 
@@ -1068,22 +1166,54 @@
   <!-- ============================================================
        CODE SAMPLE
        ============================================================ -->
-  <section class="spread" id="code">
+  <section class="spread" id="proof">
     <div class="section-head reveal">
       <div class="roman">III.</div>
-      <h2>The <em>shape</em> of the API.</h2>
-      <div class="folio">folio iii — quickstart</div>
+      <h2>Built once. <em>Proven twice,</em> at the extremes.</h2>
+      <div class="folio">folio iii — the proof</div>
+    </div>
+
+    <p class="section-lede reveal">We didn't write a spec and hope. Two live products run on the same library at opposite ends of the trust dial.</p>
+
+    <div class="proof reveal">
+      <article class="proof-card sealed">
+        <div class="posture">● maximum privacy</div>
+        <div class="domain">frio.help</div>
+        <h3><em>frio</em> — you own it, all the way down</h3>
+        <p>A zero-knowledge service that helps families find an incarcerated relative. The operator never sees the searches; matching happens in memory; alerts go out. No one running it can see who looked for whom — local-first taken to its end: the operator can't monetize what they can't see.</p>
+        <a class="visit" href="https://frio.help">visit ↗</a>
+      </article>
+      <article class="proof-card public">
+        <div class="posture">● maximum transparency</div>
+        <div class="domain">news.spiritwriter.ai</div>
+        <h3><em>news</em> — every variant, traced to its source</h3>
+        <p>A news engine that atomizes articles, rewrites them across the spectrum, and links every variant back to its source. The lineage is public — you can follow a single fact as it mutates from outlet to outlet.</p>
+        <a class="visit" href="https://news.spiritwriter.ai">visit ↗</a>
+      </article>
+    </div>
+
+    <p class="proof-caption reveal">Same library. The only difference is the shard posture.</p>
+  </section>
+
+  <!-- ============================================================
+       ADOPTION
+       ============================================================ -->
+  <section class="spread" id="adopt">
+    <div class="section-head reveal">
+      <div class="roman">IV.</div>
+      <h2>Slip it under <em>what you already run.</em></h2>
+      <div class="folio">folio iv — adoption</div>
     </div>
 
     <div class="code-spread">
       <div class="code-narrative reveal">
-        <h3>Same content, same id. Always.</h3>
-        <p>A shard is an immutable record of atoms — facts, conventions, observations — bound to a scope and an origin. Its identity is the SHA-256 of what it contains, so writing the same shard twice is a no-op. Hydration returns XML-tagged context, ready to drop into a prompt.</p>
+        <h3>Additive, not a migration.</h3>
+        <p>Store what your agent learns, hydrate it back into a prompt later. Get provenance on day one; lean on delegation and zero-knowledge when you're ready.</p>
         <ul>
-          <li><span class="k">put</span><span>idempotent. duplicates dedupe.</span></li>
-          <li><span class="k">hydrate</span><span>returns prompt-ready XML.</span></li>
-          <li><span class="k">decay</span><span>permanent · stable · active · session.</span></li>
-          <li><span class="k">scope</span><span>queryable namespace.</span></li>
+          <li><span class="k">local-first</span><span>shards are JSON on disk; the index is one JSON file. No daemon, nothing leaves your machine.</span></li>
+          <li><span class="k">agent-readable</span><span>every capability ships a skill file — your agent learns the primitives by reading it.</span></li>
+          <li><span class="k">cheap to leave</span><span>files you own, Apache 2.0. Low exit cost, low risk to try.</span></li>
+          <li><span class="k">no host</span><span>nothing to host means nothing to bill — no vendor in the middle of your data.</span></li>
         </ul>
       </div>
 
@@ -1126,22 +1256,22 @@ context = store.<span class="fn">hydrate</span>([ref])    <span class="com"># XM
   <!-- ============================================================
        BEAR PROBLEM
        ============================================================ -->
-  <section class="spread" id="bear">
+  <section class="spread" id="numbers">
     <div class="section-head reveal">
-      <div class="roman">IV.</div>
-      <h2>The <em>Bear</em> problem.</h2>
-      <div class="folio">folio iv — resolution</div>
+      <div class="roman">V.</div>
+      <h2>We measured it. <em>We tried to break it.</em></h2>
+      <div class="folio">folio v — the numbers</div>
     </div>
 
     <div class="bear">
       <div class="bear-prose reveal">
-        <p>You're extracting facts about Aaron from a stack of documents. Document 1 surfaces "Bear is Aaron's favorite." Document 2: "Aaron and Bear were at the park." Document 3: "Aaron's dog Bear, a 10-year-old black lab / border collie mix."</p>
+        <p>Entity resolution is where memory systems quietly corrupt themselves — merging two different people, or splitting one across three records. So we held it to a falsification battery, not vibes.</p>
 
-        <p>Each document gives partial defining-field coverage. Your extractor classifies Bear three different ways. Three identifiers for the same entity, and they don't align. A naive system keeps them separate; a sloppy one collapses by surface name and now Bear-the-dog merges with Bear-the-beer-brand from Document 4. Embedding-based systems hallucinate the boundaries — "Bear" the dog scores close to "Bear" the bear scores close to "Bear" the brand, and the merge decisions become unauditable.</p>
+        <p><strong>100% auto-merge precision</strong> — zero incorrect merges across five benchmark corpora. And it <strong>surfaces 100% of same-entity matches</strong>: auto-merging the safe ones, flagging the rest for review, so nothing slips through silently.</p>
 
-        <p>The resolver <strong>hashes the <em>defining fields</em></strong> — name, entity type, owner, dob — into an Entity Sense Signature: a deterministic identity hash. As more documents land, the field set per entity grows. The growing field set produces a stable ESS the moment you have enough fields to disambiguate. Fields not yet known don't penalize — they're absent from the hash.</p>
+        <p>No embeddings, no LLM in the merge path — deterministic hashing, normalization, and tiered escalation that <em>fails loud</em> instead of silently combining two different people. Backed by a falsification battery, a workshop curriculum, and runnable examples.</p>
 
-        <p>The same primitive handles the inverse. "Carlos Martinez", "MARTINEZ, CARLOS A", and "C. Martinez" across three rosters dedupe into one entity, because their defining fields normalize to the same hash regardless of surface spelling.</p>
+        <p><a href="https://github.com/aaronmarkham/spiritwriter-core/blob/main/docs/benchmarks/runs-log.md">See the measurements →</a></p>
       </div>
 
       <aside class="bear-aside reveal">
@@ -1151,8 +1281,8 @@ context = store.<span class="fn">hydrate</span>([ref])    <span class="com"># XM
             <tr><th>Tier</th><th>Match</th><th>Action</th></tr>
           </thead>
           <tbody>
-            <tr><td class="tier">T1</td><td>Exact ESS digest</td><td class="action auto">Auto-merge</td></tr>
-            <tr><td class="tier">T2</td><td>High fuzzy + ESS overlap</td><td class="action auto">Auto-merge</td></tr>
+            <tr><td class="tier">T1</td><td>Exact digest match</td><td class="action auto">Auto-merge</td></tr>
+            <tr><td class="tier">T2</td><td>High fuzzy + field overlap</td><td class="action auto">Auto-merge</td></tr>
             <tr><td class="tier">T3</td><td>Fuzzy, lower combined</td><td class="action flag">Flag</td></tr>
             <tr><td class="tier">T4</td><td>Weak context overlap</td><td class="action flag">Flag</td></tr>
           </tbody>
@@ -1160,7 +1290,7 @@ context = store.<span class="fn">hydrate</span>([ref])    <span class="com"># XM
 
         <div class="num-fact">
           <div class="v">100<span style="font-size:0.5em;color:var(--ink-faint);"> %</span></div>
-          <div class="l">auto-merge precision across 5 benchmark corpora. <strong>0</strong> false merges. <strong>12/12</strong> hand-curated collision pairs correctly distinguished. No embeddings, no LLM in the merge path.</div>
+          <div class="l">auto-merge precision across 5 benchmark corpora. <strong>0</strong> false merges. <strong>100%</strong> of same-entity matches surfaced — merged or flagged. No embeddings, no LLM in the merge path.</div>
         </div>
       </aside>
     </div>
@@ -1169,54 +1299,57 @@ context = store.<span class="fn">hydrate</span>([ref])    <span class="com"># XM
   <!-- ============================================================
        USED BY
        ============================================================ -->
-  <section class="spread" id="used-by">
+  <section class="spread" id="ends">
     <div class="section-head reveal">
-      <div class="roman">V.</div>
-      <h2>In production, <em>quietly.</em></h2>
-      <div class="folio">folio v — citations</div>
+      <div class="roman">VI.</div>
+      <h2>What it <em>ends.</em></h2>
+      <div class="folio">folio vi — what you get</div>
     </div>
 
-    <div class="used-by">
-      <article class="item reveal">
-        <div class="domain">frio.help</div>
-        <h4><em>frio</em> — zero-knowledge jail roster monitoring</h4>
-        <p>Encrypted search shards and fuzzy name matching for monitoring without disclosing the watchlist.</p>
-        <a class="visit" href="https://frio.help">visit ↗</a>
-      </article>
-      <article class="item reveal">
-        <div class="domain">news.spiritwriter.ai</div>
-        <h4><em>news</em> — dual-perspective with bias detection</h4>
-        <p>Two points of view per story, plus transparent bias detection, source selection, and reader analytics — every judgment auditable through the trace.</p>
-        <a class="visit" href="https://news.spiritwriter.ai">visit ↗</a>
-      </article>
-      <article class="item reveal">
-        <div class="domain">podcasts.spiritwriter.ai</div>
-        <h4><em>podcasts</em> — multi-agent video → audio</h4>
-        <p>AI-generated podcasts assembled from multi-agent video production traces.</p>
-        <a class="visit" href="https://podcasts.spiritwriter.ai">visit ↗</a>
-      </article>
-      <article class="item reveal">
-        <div class="domain">github / claude-studio-producer</div>
-        <h4><em>Studio Producer</em> — media production pipeline</h4>
-        <p>Canonical worked example for traced workflows; checkpointed multi-stage producer agent.</p>
-        <a class="visit" href="https://github.com/aaronmarkham/claude-studio-producer">visit ↗</a>
-      </article>
-    </div>
+    <table class="ends-table reveal">
+      <tbody>
+        <tr>
+          <td class="problem">Memory that drifts into contradiction</td>
+          <td class="gives"><strong>Content-addressed shards</strong> with lineage, supersession, and decay.</td>
+        </tr>
+        <tr>
+          <td class="problem">"Can I let a sub-agent see this?"</td>
+          <td class="gives"><strong>Scoped entitlements</strong> — keys + scope + capabilities + budget, enforced before decrypt.</td>
+        </tr>
+        <tr>
+          <td class="problem">"What did the agent actually do?"</td>
+          <td class="gives"><strong>Hash-chained, signable traces</strong> you can verify offline.</td>
+        </tr>
+        <tr>
+          <td class="problem">Duplicate / colliding entities</td>
+          <td class="gives"><strong>Deterministic-then-fuzzy resolution</strong>, no embeddings.</td>
+        </tr>
+        <tr>
+          <td class="problem">Privacy vs. transparency</td>
+          <td class="gives"><strong>The same dial</strong> — AES, sealed boxes, or fully public.</td>
+        </tr>
+        <tr>
+          <td class="problem">Sharing across machines</td>
+          <td class="gives"><strong>Private IPFS swarm</strong>, no database.</td>
+        </tr>
+      </tbody>
+    </table>
   </section>
 
   <!-- ============================================================
        CLOSING CTA
        ============================================================ -->
   <section class="spread closing reveal">
-    <h2 class="lockup">Bring your own <em>agents.</em></h2>
-    <p>One pip install. No service to host, no vector DB to keep alive. Read the source — it is the documentation that compiles.</p>
+    <h2 class="lockup">Own your agents' <em>memory.</em></h2>
+    <p>One pip install. No service to host, no vector DB to keep alive, no one in the middle of your data. The artifact is yours — commit it, back it up, hand it off.</p>
     <div class="cta-row">
+      <button type="button" class="copy-install" aria-label="Copy install command">
+        <span class="prompt">$</span>
+        <span class="label">pip&nbsp;install&nbsp;spiritwriter-core</span>
+        <span class="copied">copied</span>
+      </button>
       <a class="seal-button" href="https://github.com/aaronmarkham/spiritwriter-core">
         <span>Read the source</span><span class="arr">→</span>
-      </a>
-      <a class="copy-install" href="https://github.com/aaronmarkham/spiritwriter-core#documentation" style="cursor: pointer; text-decoration: none;">
-        <span class="prompt">¶</span>
-        <span class="label">browse the documentation</span>
       </a>
     </div>
   </section>
@@ -1257,7 +1390,7 @@ context = store.<span class="fn">hydrate</span>([ref])    <span class="com"># XM
       <h5>Specs</h5>
       <ul>
         <li><a href="https://github.com/aaronmarkham/spiritwriter-core/blob/main/docs/substrate-flavor.md">substrate flavor</a></li>
-        <li><a href="https://github.com/aaronmarkham/spiritwriter-core/blob/main/docs/specs/cmc-spec-v0.1.md">cmc-lite</a></li>
+        <li><a href="https://github.com/aaronmarkham/spiritwriter-core/blob/main/docs/entity-resolution.md">entity resolution</a></li>
         <li><a href="https://github.com/aaronmarkham/spiritwriter-core/blob/main/docs/tracing.md">tracing</a></li>
         <li><a href="https://github.com/aaronmarkham/spiritwriter-core/blob/main/docs/audit.md">audit</a></li>
       </ul>
@@ -1275,9 +1408,8 @@ context = store.<span class="fn">hydrate</span>([ref])    <span class="com"># XM
 </footer>
 
 <script>
-  // copy-to-clipboard for install command
-  const btn = document.getElementById('copyInstall');
-  if (btn) {
+  // copy-to-clipboard for install command (hero + closing CTA)
+  document.querySelectorAll('button.copy-install').forEach((btn) => {
     btn.addEventListener('click', async () => {
       try {
         await navigator.clipboard.writeText('pip install spiritwriter-core');
@@ -1285,7 +1417,7 @@ context = store.<span class="fn">hydrate</span>([ref])    <span class="com"># XM
         setTimeout(() => btn.classList.remove('is-copied'), 1500);
       } catch (e) { /* ignore */ }
     });
-  }
+  });
 
   // reveal on scroll
   const io = new IntersectionObserver((entries) => {
