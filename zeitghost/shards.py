@@ -156,7 +156,7 @@ def _agent_string() -> str:
     try:
         from importlib.metadata import version, PackageNotFoundError
         try:
-            sw = version("spiritwriter-core")
+            sw = version("spiritwriter")
         except PackageNotFoundError:
             sw = "?"
     except ImportError:

@@ -95,9 +95,9 @@ ShardAtom(kind=CONTEXT,  key="reason",    value="JSONB columns for typed sparse 
     <p>Reading the chain backward via <code>parent_shard_id</code> gives the full provenance — what we thought, when, and what changed. Reading forward shows the latest version. The old revisions don't disappear.</p>
     <p>This matters for accountability. A bias-analysis site claiming "Source X is 0.72 right-leaning" should be auditable. With shard lineage you can ask: <em>when did we first say that, what model produced it, has the score drifted as we refined our methodology?</em></p>
 
-    {# ─── Powered by spiritwriter-core ────────────────────────────────── #}
-    <h3>Powered by spiritwriter-core</h3>
-    <p>The shard format, lineage, decay TTLs, and content-addressing all come from <a href="https://github.com/aaronmarkham/spiritwriter-core" rel="noopener"><strong>spiritwriter-core</strong></a> — a library for building agents and applications around persistent, distributable memory. Because the <code>sw:article</code> atom keys follow a stable convention, any other spiritwriter-aware tool can read this site's data without needing to know anything about zeitghost specifically.</p>
+    {# ─── Powered by spiritwriter ────────────────────────────────── #}
+    <h3>Powered by spiritwriter</h3>
+    <p>The shard format, lineage, decay TTLs, and content-addressing all come from <a href="https://github.com/aaronmarkham/spiritwriter-core" rel="noopener"><strong>spiritwriter</strong></a> — a library for building agents and applications around persistent, distributable memory. Because the <code>sw:article</code> atom keys follow a stable convention, any other spiritwriter-aware tool can read this site's data without needing to know anything about zeitghost specifically.</p>
 
     {# ─── Shard store stats ───────────────────────────────────────────── #}
     <h3>By the numbers</h3>

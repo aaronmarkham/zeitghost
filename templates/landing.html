@@ -932,7 +932,7 @@
           </a>
           <button type="button" class="copy-install" id="copyInstall" aria-label="Copy install command">
             <span class="prompt">$</span>
-            <span class="label">pip&nbsp;install&nbsp;spiritwriter-core</span>
+            <span class="label">pip&nbsp;install&nbsp;spiritwriter</span>
             <span class="copied">copied</span>
           </button>
         </div>
@@ -1241,7 +1241,7 @@ context = store.<span class="fn">hydrate</span>([ref])    <span class="com"># XM
         <li><a href="https://github.com/aaronmarkham/spiritwriter-core">github</a></li>
         <li><a href="https://github.com/aaronmarkham/spiritwriter-core#documentation">docs</a></li>
         <li><a href="https://github.com/aaronmarkham/spiritwriter-core/tree/main/examples">examples</a></li>
-        <li><a href="https://pypi.org/project/spiritwriter-core/">pypi</a></li>
+        <li><a href="https://pypi.org/project/spiritwriter/">pypi</a></li>
       </ul>
     </div>
     <div>
@@ -1269,7 +1269,7 @@ context = store.<span class="fn">hydrate</span>([ref])    <span class="com"># XM
     {% else %}
     <span>deploy · <span class="hash">local</span></span>
     {% endif %}
-    {% if sw_core_version %}<span>library · spiritwriter-core v{{ sw_core_version }}</span>{% else %}<span>library · spiritwriter-core</span>{% endif %}
+    {% if sw_core_version %}<span>library · spiritwriter v{{ sw_core_version }}</span>{% else %}<span>library · spiritwriter</span>{% endif %}
     <span>folio <span style="color:var(--seal);">complete</span></span>
   </div>
 </footer>
@@ -1280,7 +1280,7 @@ context = store.<span class="fn">hydrate</span>([ref])    <span class="com"># XM
   if (btn) {
     btn.addEventListener('click', async () => {
       try {
-        await navigator.clipboard.writeText('pip install spiritwriter-core');
+        await navigator.clipboard.writeText('pip install spiritwriter');
         btn.classList.add('is-copied');
         setTimeout(() => btn.classList.remove('is-copied'), 1500);
       } catch (e) { /* ignore */ }

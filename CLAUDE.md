@@ -47,7 +47,7 @@ zeitghost import-legacy --db-url postgresql://user:pass@host/db
 
 ## Dependencies
 
-- `spiritwriter-core>=0.3.0` — shards, LLM provider, secrets
+- `spiritwriter>=0.9.0` — shards, LLM provider, secrets
 - `anthropic>=0.40.0` — Claude API (used via spiritwriter LLM provider)
 - `requests` — NewsAPI HTTP
 - `jinja2`, `click`, `rich`, `pyyaml`
@@ -71,7 +71,7 @@ Two shard scopes per article (mirror perseus's pattern):
 
 ## Deployment
 
-us-ny1 (Ubuntu, Tailscale-meshed, NY). Docker stack: `builder` (loops `zeitghost ingest && zeitghost build`) + `nginx` (serves `output/`). Behind Cloudflare for TLS. CI/CD via GitHub Actions: PR runs tests; push-to-main builds spiritwriter-core wheel, deploys via Ansible-over-Tailscale.
+us-ny1 (Ubuntu, Tailscale-meshed, NY). Docker stack: `builder` (loops `zeitghost ingest && zeitghost build`) + `nginx` (serves `output/`). Behind Cloudflare for TLS. CI/CD via GitHub Actions: PR runs tests; push-to-main builds spiritwriter wheel, deploys via Ansible-over-Tailscale.
 
 ## Robustness invariants (production-debug lessons)
 

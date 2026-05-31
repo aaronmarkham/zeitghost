@@ -4,7 +4,7 @@ All notable changes to `zeitghost` are documented here. The format follows [Keep
 
 ## [0.1.0] — 2026-05-31
 
-Initial public release. Apache-2.0, companion to [spiritwriter-core](https://github.com/aaronmarkham/spiritwriter-core).
+Initial public release. Apache-2.0, companion to [spiritwriter](https://github.com/aaronmarkham/spiritwriter-core).
 
 ### Added
 - Static-site pipeline: NewsAPI fetch → Claude bias analysis → dual left/right rewrites → `sw:article` shards → Jinja2 site with a client-side bias slider.

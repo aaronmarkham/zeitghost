@@ -21,7 +21,7 @@ if [ ! -d "$SW_CORE" ]; then
 fi
 
 mkdir -p "$WHEELS_DIR"
-rm -f "$WHEELS_DIR"/spiritwriter_core-*.whl
+rm -f "$WHEELS_DIR"/spiritwriter-*.whl
 
 echo "Building spiritwriter-core wheel..."
 pip wheel "$SW_CORE" --no-deps -w "$WHEELS_DIR" 2>&1 | tail -3

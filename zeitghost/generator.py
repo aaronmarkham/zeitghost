@@ -204,7 +204,7 @@ def generate_site(articles: list[AnalyzedArticle],
     # provenance loop alongside the commit SHA.
     from importlib.metadata import version, PackageNotFoundError
     try:
-        sw_core_version = version("spiritwriter-core")
+        sw_core_version = version("spiritwriter")
     except PackageNotFoundError:
         sw_core_version = ""
 

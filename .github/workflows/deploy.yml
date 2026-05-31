@@ -77,7 +77,7 @@ jobs:
 
       - name: Build wheel
         run: |
-          rm -f infra/docker/wheels/spiritwriter_core-*.whl
+          rm -f infra/docker/wheels/spiritwriter-*.whl
           pip wheel ./spiritwriter-core --no-deps -w infra/docker/wheels/
 
       - uses: actions/upload-artifact@v4
