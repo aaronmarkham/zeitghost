@@ -566,3 +566,34 @@ def load_articles_from_shards(store: ShardStore) -> list[AnalyzedArticle]:
         if a:
             out.append(a)
     return out
+
+
+def select_for_reanalysis(articles: list[AnalyzedArticle], *,
+                          source: str | None = None,
+                          since: str | None = None,
+                          limit: int = 0) -> list[AnalyzedArticle]:
+    """Pick which loaded articles to re-analyze, newest-published first.
+
+    Filters are ANDed: `source` matches by source-name slug (so "Fox News" and
+    "fox-news" both hit), `since` keeps articles published on/after a YYYY-MM-DD
+    date (lexicographic on the ISO `published` prefix), `limit` caps the result
+    (0 = no cap). Sorting newest-first means `--limit` re-scores the most recent
+    articles — the ones most likely to benefit from a model refresh.
+
+    Pure function (no store/LLM access) so the `reanalyze` command's selection
+    logic is unit-testable without Claude.
+    """
+    from zeitghost.analytics import source_slug
+
+    selected = list(articles)
+    if source:
+        want = source_slug(source)
+        selected = [a for a in selected
+                    if source_slug(a.original.source_name) == want]
+    if since:
+        selected = [a for a in selected
+                    if (a.original.published or "")[:10] >= since]
+    selected.sort(key=lambda a: a.original.published or "", reverse=True)
+    if limit and limit > 0:
+        selected = selected[:limit]
+    return selected

@@ -19,9 +19,12 @@ feeds/newsapi.yaml → fetcher.py → bias.py (Claude) → shards.py → generat
 
 ```bash
 pip install -e ".[dev]"
-zeitghost ingest                    # fetch + analyze + write shards
+zeitghost ingest                    # fetch + analyze + write shards (dedups known)
+zeitghost reanalyze --limit 50      # re-score existing articles → chained revisions
+                                    # (bypasses dedup; --source/--since/--model/--dry-run)
 zeitghost build                     # render site from shards
 zeitghost analytics                 # source-bias rollup page
+zeitghost gen-signing-key           # mint an Ed25519 shard-signing key (see --help)
 zeitghost import-legacy --db-url postgresql://user:pass@host/db
                                     # seed from a temp Postgres holding a
                                     # restored HtmxNewsEngine dump (see

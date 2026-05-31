@@ -222,12 +222,18 @@ def _extract_json(text: str) -> dict | None:
 
 
 async def analyze_article(article: Article,
-                          stats: dict | None = None) -> AnalyzedArticle | None:
+                          stats: dict | None = None,
+                          model: str = DEFAULT_MODEL) -> AnalyzedArticle | None:
     """Analyze one article — compute bias and generate both variants.
 
     Pass a mutable `stats` dict to tally why articles are dropped — currently
     the `no_score` reason (skipped for a missing/invalid bias_score). Lets
     `analyze_batch` surface the count so a silent feed-drop is noticeable.
+
+    `model` selects the Claude model (defaults to DEFAULT_MODEL); `reanalyze`
+    passes a different one to re-score an existing article. Note this does NOT
+    set the returned article's `.model` field — callers that re-analyze with a
+    non-default model must set it so the shard records the right producer.
     """
     provider = _get_provider()
     # Prefer the trafilatura-extracted body when present (richer context for
@@ -240,7 +246,7 @@ async def analyze_article(article: Article,
     )
 
     try:
-        response = await provider.query(prompt, model=DEFAULT_MODEL)
+        response = await provider.query(prompt, model=model)
         data = _extract_json(response)
         if data is None:
             log.warning("No valid JSON in response for '%s'", article.title[:50])
@@ -277,7 +283,8 @@ async def analyze_article(article: Article,
         return None
 
 
-async def analyze_batch(articles: list[Article]) -> list[AnalyzedArticle]:
+async def analyze_batch(articles: list[Article],
+                        model: str = DEFAULT_MODEL) -> list[AnalyzedArticle]:
     """Analyze a batch of articles. Skips any that fail to parse.
 
     Logs a WARNING with the count of articles dropped for a missing/invalid
@@ -285,11 +292,14 @@ async def analyze_batch(articles: list[Article]) -> list[AnalyzedArticle]:
     default-fill), so the count surfaces an LLM regression that starts dropping
     a chunk of articles. Logging propagates to the CLI's RichHandler, so it
     shows on the operator's console during `zeitghost ingest`.
+
+    `model` is forwarded to each analysis (defaults to DEFAULT_MODEL); the
+    `reanalyze` command passes an override to re-score with a newer model.
     """
     results = []
     stats: dict[str, int] = {}
     for article in articles:
-        analyzed = await analyze_article(article, stats=stats)
+        analyzed = await analyze_article(article, stats=stats, model=model)
         if analyzed is not None:
             results.append(analyzed)
     log.info("Analyzed %d articles, %d succeeded", len(articles), len(results))
