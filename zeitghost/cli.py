@@ -132,6 +132,122 @@ def ingest(feeds: str, limit: int, max_requests: int | None, dry_run: bool,
 
 
 @main.command()
+@click.option("--source", help="Only re-analyze articles from this source "
+                                "(name or slug, e.g. 'Fox News' or 'fox-news')")
+@click.option("--since", help="Only articles published on/after this date "
+                              "(YYYY-MM-DD)")
+@click.option("--limit", "-n", type=int, default=0,
+              help="Cap how many articles to re-analyze (newest first). "
+                   "Required when no --source/--since filter is given, to "
+                   "avoid re-scoring the whole corpus.")
+@click.option("--model", default=None,
+              help="Claude model for re-analysis (default: bias.DEFAULT_MODEL). "
+                   "Recorded on the new shard so lineage shows which model "
+                   "produced each revision.")
+@click.option("--dry-run", is_flag=True,
+              help="Select + report only — no Claude calls, no writes.")
+@click.option("--require-signing", is_flag=True,
+              help="Fail if no valid signing key is configured (see ingest).")
+def reanalyze(source: str | None, since: str | None, limit: int,
+              model: str | None, dry_run: bool, require_signing: bool):
+    """Re-score existing articles with Claude, writing them as new revisions.
+
+    Unlike `ingest` (which dedups and skips known articles), `reanalyze`
+    deliberately re-processes articles already in the store — re-running bias
+    analysis and writing a NEW shard that chains onto the prior one via
+    parent_shard_id. This is the workflow that exercises lineage: re-score a
+    window with a newer model and keep the old revision in the chain.
+
+    Bounded by design: pass --limit and/or --source/--since. Re-analysis costs
+    one Claude call per article, so a bare `reanalyze` (whole corpus) is
+    refused.
+    """
+    import asyncio
+    from zeitghost.bias import analyze_batch, DEFAULT_MODEL
+    from zeitghost.shards import (init_store, load_articles_from_shards,
+                                  select_for_reanalysis, build_lineage_index,
+                                  article_to_internal_shard, article_to_sw_shard,
+                                  resolve_signing_seed, signing_required,
+                                  SIGNING_KEY_NAME, init_trace_emitter,
+                                  SCOPE_INTERNAL, SCOPE_SW_ARTICLE)
+
+    if not source and not since and limit <= 0:
+        raise click.ClickException(
+            "Refusing to re-analyze the entire corpus (one Claude call each). "
+            "Narrow it with --limit and/or --source/--since."
+        )
+    if since:
+        from datetime import datetime
+        try:
+            datetime.strptime(since, "%Y-%m-%d")
+        except ValueError:
+            raise click.ClickException(
+                f"--since must be YYYY-MM-DD (got {since!r}). Date comparison is "
+                f"lexicographic on the ISO prefix, so a malformed date silently "
+                f"matches everything or nothing."
+            )
+
+    model = model or DEFAULT_MODEL
+    store = init_store()
+
+    # Fail fast on a required-but-missing signing key, before any Claude spend.
+    seed = resolve_signing_seed()
+    if seed is None and signing_required(require_signing):
+        raise click.ClickException(
+            f"Signing is required but no valid {SIGNING_KEY_NAME} is configured. "
+            f"Provision the key (see `zeitghost gen-signing-key`), or drop "
+            f"--require-signing / unset ZEITGHOST_REQUIRE_SIGNING for unsigned runs."
+        )
+
+    selected = select_for_reanalysis(
+        load_articles_from_shards(store),
+        source=source, since=since, limit=limit,
+    )
+    console.print(f"[bold]{len(selected)} articles selected for re-analysis[/bold] "
+                  f"(model: {model})")
+    if not selected:
+        return
+
+    if dry_run:
+        console.print("[yellow]Dry run — no Claude calls, no writes[/yellow]")
+        for a in selected[:10]:
+            console.print(f"  [{a.bias_label} {a.bias_score:.2f}] "
+                          f"{a.original.source_name}: {a.original.title[:60]}")
+        if len(selected) > 10:
+            console.print(f"  … and {len(selected) - 10} more")
+        return
+
+    console.print(f"[bold]Re-analyzing {len(selected)} articles with Claude...[/bold]")
+    # analyze_batch stamps each result's .model with the model used, so the
+    # revision shard records which model produced it.
+    results = asyncio.run(analyze_batch([a.original for a in selected], model=model))
+    skipped = len(selected) - len(results)
+    console.print(f"  {len(results)} re-analyzed, {skipped} skipped (analysis failed)")
+    if not results:
+        return
+
+    # Lineage indexes resolve each entity's current head → the new shards chain
+    # onto it as revisions (every selected article already exists, so all chain).
+    internal_lineage = build_lineage_index(store, SCOPE_INTERNAL)
+    sw_lineage = build_lineage_index(store, SCOPE_SW_ARTICLE)
+    console.print("  Signing shards (ZEITGHOST_SIGNING_KEY configured)"
+                  if seed else "  [dim]No signing key — writing unsigned shards[/dim]")
+    emitter, trace_path = init_trace_emitter(store)
+    for r in results:
+        article_to_internal_shard(r, store, lineage_index=internal_lineage,
+                                  signing_seed=seed, emitter=emitter)
+        article_to_sw_shard(r, store, lineage_index=sw_lineage,
+                            signing_seed=seed, emitter=emitter)
+    console.print(f"  {len(results) * 2} revision shards written (chained via "
+                  f"parent_shard_id)")
+    from spiritwriter.fabric.emitter import verify_chain
+    events = emitter.get_events()
+    console.print(f"  Trace: {len(events)} events recorded → traces/{trace_path.name}")
+    if not verify_chain(events):
+        console.print("  [red]Warning: trace chain failed self-verification[/red]")
+
+
+@main.command()
 @click.option("--output", "-o", type=click.Path(),
               default=str(PROJECT_ROOT / "output"),
               help="Output directory for the rendered site")
