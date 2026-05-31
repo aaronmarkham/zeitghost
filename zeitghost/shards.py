@@ -25,6 +25,69 @@ log = logging.getLogger(__name__)
 SCOPE_INTERNAL = "zeitghost:article"
 SCOPE_SW_ARTICLE = "sw:article"
 
+# Secret name (OS keychain key / env var) holding the 64-char-hex Ed25519 seed
+# used to sign shards. Resolved via spiritwriter.secrets, which checks the
+# keychain first then falls back to the environment — so the headless us-ny1
+# builder can be handed the seed through a ZEITGHOST_SIGNING_KEY env var.
+SIGNING_KEY_NAME = "ZEITGHOST_SIGNING_KEY"
+
+
+def resolve_signing_seed() -> bytes | None:
+    """Return the 32-byte Ed25519 signing seed, or None if none is configured.
+
+    Signing is opt-in: an environment without `ZEITGHOST_SIGNING_KEY` set
+    (local dev, CI, a freshly-provisioned container) simply writes unsigned
+    shards rather than failing. Pass the result to `article_to_*_shard(...,
+    signing_seed=...)`. Generate a key with `zeitghost gen-signing-key`.
+
+    Returns None — and logs a warning — when the configured value isn't a
+    valid 32-byte hex seed, so a fat-fingered key degrades to unsigned rather
+    than crashing ingest.
+    """
+    # Lazy import keeps secrets/keyring off the module-import path
+    # (robustness invariant #2: no I/O at import).
+    from spiritwriter.secrets import configure, get_api_key
+
+    configure(service_name="zeitghost")
+    raw = get_api_key(SIGNING_KEY_NAME)
+    if not raw:
+        return None
+    try:
+        seed = bytes.fromhex(raw.strip())
+    except ValueError:
+        log.warning("%s is not valid hex — writing unsigned shards",
+                    SIGNING_KEY_NAME)
+        return None
+    if len(seed) != 32:
+        log.warning("%s must decode to 32 bytes (got %d) — writing unsigned shards",
+                    SIGNING_KEY_NAME, len(seed))
+        return None
+    return seed
+
+
+def signing_required(flag: bool = False) -> bool:
+    """Whether ingest must fail-closed when no signing key is configured.
+
+    True if the `--require-signing` flag is passed OR `ZEITGHOST_REQUIRE_SIGNING`
+    is truthy. Prod (us-ny1) sets the env var once its `ZEITGHOST_SIGNING_KEY`
+    is provisioned, so an accidentally-cleared key fails the run loudly instead
+    of silently writing unsigned shards. Local dev and CI leave both unset, so
+    signing stays opt-in there.
+    """
+    if flag:
+        return True
+    val = os.environ.get("ZEITGHOST_REQUIRE_SIGNING", "").strip().lower()
+    return val in ("1", "true", "yes", "on")
+
+
+def _maybe_sign(shard: MemoryShard, signing_seed: bytes | None) -> None:
+    """Sign `shard` in place when a seed is supplied (sets `signature` and
+    `created_by`). The signature covers {atoms, scope, origin, …} but NOT the
+    content-address, so signing never changes `shard.shard_id` — safe to call
+    before `store.put` and to return the id afterwards."""
+    if signing_seed:
+        shard.sign(signing_seed)
+
 
 def _agent_string() -> str:
     """Identify the agent that wrote this shard: zeitghost version +
@@ -55,18 +118,31 @@ def _url_entity(url: str) -> str:
     return f"article:{hashlib.sha256(url.encode()).hexdigest()}"
 
 
+def _entity_of(shard: MemoryShard) -> str:
+    """Entity key for a shard: `meta['entity_key']` if present, else derived
+    from the `source_url` atom. Returns "" when neither is available.
+
+    Single source of truth for the "which article does this shard describe?"
+    lookup shared by `known_url_entities`, `build_lineage_index`, and
+    `load_articles_from_shards` — keep them in agreement so dedup, lineage
+    chaining, and render-time collapse all key off the same identity.
+    """
+    ent = shard.meta.get("entity_key", "")
+    if ent:
+        return ent
+    for atom in shard.atoms:
+        if atom.key == "source_url" and atom.entity:
+            return atom.entity
+    return ""
+
+
 def known_url_entities(store: ShardStore) -> set[str]:
     """Return entity keys (article:{hash}) already in the internal scope."""
     seen: set[str] = set()
     for shard in store.by_scope(SCOPE_INTERNAL):
-        ent = shard.meta.get("entity_key", "")
+        ent = _entity_of(shard)
         if ent:
             seen.add(ent)
-            continue
-        for atom in shard.atoms:
-            if atom.key == "source_url" and atom.entity:
-                seen.add(atom.entity)
-                break
     return seen
 
 
@@ -87,12 +163,7 @@ def build_lineage_index(store: ShardStore, scope: str) -> dict[str, str]:
     """
     latest: dict[str, tuple[str, str]] = {}  # entity → (shard_id, created_at)
     for shard in store.by_scope(scope):
-        ent = shard.meta.get("entity_key", "")
-        if not ent:
-            for atom in shard.atoms:
-                if atom.key == "source_url" and atom.entity:
-                    ent = atom.entity
-                    break
+        ent = _entity_of(shard)
         if not ent:
             continue
         existing = latest.get(ent)
@@ -156,7 +227,8 @@ def _article_tags(article: AnalyzedArticle) -> list[str]:
 
 
 def article_to_internal_shard(article: AnalyzedArticle, store: ShardStore,
-                              lineage_index: dict[str, str] | None = None
+                              lineage_index: dict[str, str] | None = None,
+                              signing_seed: bytes | None = None
                               ) -> str:
     """Write the zeitghost-internal shard with full L/R variant data.
 
@@ -251,15 +323,18 @@ def article_to_internal_shard(article: AnalyzedArticle, store: ShardStore,
         tags=_article_tags(article),
         meta={"entity_key": entity},
     )
+    _maybe_sign(shard, signing_seed)
     store.put(shard)
-    log.debug("Stored zeitghost shard %s for '%s'%s",
+    log.debug("Stored zeitghost shard %s for '%s'%s%s",
              shard.shard_id[:12], article.original.title[:40],
-             f" (revision of {parent[:12]})" if parent else "")
+             f" (revision of {parent[:12]})" if parent else "",
+             " [signed]" if shard.signature else "")
     return shard.shard_id
 
 
 def article_to_sw_shard(article: AnalyzedArticle, store: ShardStore,
-                        lineage_index: dict[str, str] | None = None) -> str:
+                        lineage_index: dict[str, str] | None = None,
+                        signing_seed: bytes | None = None) -> str:
     """Write the consumer-agnostic sw:article shard.
 
     Atom keys (`title`, `summary`, etc.) match frio's `shard_from_article()`.
@@ -311,6 +386,7 @@ def article_to_sw_shard(article: AnalyzedArticle, store: ShardStore,
         tags=_article_tags(article),
         meta={"entity_key": entity},
     )
+    _maybe_sign(shard, signing_seed)
     store.put(shard)
     return shard.shard_id
 
@@ -389,9 +465,36 @@ def _shard_to_article(shard: MemoryShard) -> AnalyzedArticle | None:
 
 
 def load_articles_from_shards(store: ShardStore) -> list[AnalyzedArticle]:
-    """Reconstruct AnalyzedArticle objects from all zeitghost:article shards."""
-    out = []
+    """Reconstruct AnalyzedArticle objects — one per entity, newest revision.
+
+    Re-analysing an article writes a new shard linked to the prior one via
+    `parent_shard_id` (see `build_lineage_index`), so the store accumulates a
+    revision chain per article. The renderer wants the *current* state, so we
+    collapse each chain to its newest shard here — otherwise a re-analyzed
+    article would surface as two cards. Latest-wins by `created_at`, matching
+    the selection `build_lineage_index` uses when picking parents.
+
+    Shards with no resolvable entity key (neither `meta['entity_key']` nor a
+    `source_url` atom) can't be deduped, so they're passed through individually
+    rather than dropped.
+    """
+    latest: dict[str, MemoryShard] = {}
+    orphans: list[MemoryShard] = []
     for shard in store.by_scope(SCOPE_INTERNAL):
+        ent = _entity_of(shard)
+        if not ent:
+            orphans.append(shard)
+            continue
+        cur = latest.get(ent)
+        # Strict `>` means equal timestamps (sub-second collision, or both "")
+        # keep the first shard `by_scope` yields — ties go to first-seen. This
+        # matches build_lineage_index's comparison, so the "latest" rendered
+        # here is the same shard its parent-chaining treats as the head.
+        if cur is None or (shard.created_at or "") > (cur.created_at or ""):
+            latest[ent] = shard
+
+    out = []
+    for shard in (*latest.values(), *orphans):
         a = _shard_to_article(shard)
         if a:
             out.append(a)

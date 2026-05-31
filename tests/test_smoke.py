@@ -474,10 +474,15 @@ def test_shard_metadata_round_trip(tmp_path):
     shard_id_2 = article_to_internal_shard(a, store, lineage_index=lineage)
     assert shard_id_2 != shard_id_1
 
-    # Loading now returns both revisions; the newer one points at the older
+    # Loading collapses the revision chain to the latest shard per entity, so
+    # the re-analyzed article renders as ONE card (its newest revision), not
+    # two — while still carrying the parent link back to the prior shard.
     revisions = load_articles_from_shards(store)
-    by_id = {r.shard_id: r for r in revisions}
-    assert by_id[shard_id_2].parent_shard_id == shard_id_1
+    assert len(revisions) == 1
+    latest = revisions[0]
+    assert latest.shard_id == shard_id_2
+    assert latest.parent_shard_id == shard_id_1
+    assert latest.bias_score == pytest.approx(0.74)
 
 
 def test_legacy_dump_helpers_smoke():
