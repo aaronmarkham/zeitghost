@@ -10,6 +10,17 @@ def test_package_imports():
     assert zeitghost.__version__
 
 
+def test_all_cli_commands_registered():
+    """Every command must be registered on the `main` group. Guards against a
+    decorator-shuffle dropping `@main.command()` (which once left `build`
+    unregistered and would have broken the prod `ingest && build` loop)."""
+    from zeitghost.cli import main
+    expected = {"ingest", "reanalyze", "build", "analytics",
+                "gen-signing-key", "import-legacy"}
+    assert expected <= set(main.commands), (
+        f"missing: {expected - set(main.commands)}")
+
+
 def test_article_dataclass():
     from zeitghost.fetcher import Article
     a = Article(title="t", url="https://x/y", summary="s",

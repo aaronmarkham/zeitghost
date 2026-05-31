@@ -176,6 +176,16 @@ def reanalyze(source: str | None, since: str | None, limit: int,
             "Refusing to re-analyze the entire corpus (one Claude call each). "
             "Narrow it with --limit and/or --source/--since."
         )
+    if since:
+        from datetime import datetime
+        try:
+            datetime.strptime(since, "%Y-%m-%d")
+        except ValueError:
+            raise click.ClickException(
+                f"--since must be YYYY-MM-DD (got {since!r}). Date comparison is "
+                f"lexicographic on the ISO prefix, so a malformed date silently "
+                f"matches everything or nothing."
+            )
 
     model = model or DEFAULT_MODEL
     store = init_store()
@@ -208,9 +218,9 @@ def reanalyze(source: str | None, since: str | None, limit: int,
         return
 
     console.print(f"[bold]Re-analyzing {len(selected)} articles with Claude...[/bold]")
+    # analyze_batch stamps each result's .model with the model used, so the
+    # revision shard records which model produced it.
     results = asyncio.run(analyze_batch([a.original for a in selected], model=model))
-    for r in results:
-        r.model = model  # record which model produced THIS revision
     skipped = len(selected) - len(results)
     console.print(f"  {len(results)} re-analyzed, {skipped} skipped (analysis failed)")
     if not results:
@@ -235,6 +245,9 @@ def reanalyze(source: str | None, since: str | None, limit: int,
     console.print(f"  Trace: {len(events)} events recorded → traces/{trace_path.name}")
     if not verify_chain(events):
         console.print("  [red]Warning: trace chain failed self-verification[/red]")
+
+
+@main.command()
 @click.option("--output", "-o", type=click.Path(),
               default=str(PROJECT_ROOT / "output"),
               help="Output directory for the rendered site")

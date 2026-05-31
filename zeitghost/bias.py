@@ -231,9 +231,10 @@ async def analyze_article(article: Article,
     `analyze_batch` surface the count so a silent feed-drop is noticeable.
 
     `model` selects the Claude model (defaults to DEFAULT_MODEL); `reanalyze`
-    passes a different one to re-score an existing article. Note this does NOT
-    set the returned article's `.model` field — callers that re-analyze with a
-    non-default model must set it so the shard records the right producer.
+    passes a different one to re-score an existing article. The chosen model is
+    stamped on the returned article's `.model`, so the shard records which model
+    produced it (previously left empty and back-filled to DEFAULT_MODEL by the
+    writer — now always explicit).
     """
     provider = _get_provider()
     # Prefer the trafilatura-extracted body when present (richer context for
@@ -274,6 +275,7 @@ async def analyze_article(article: Article,
             variant_right_title=right.get("title", article.title),
             variant_right_summary=right.get("summary", article.summary),
             analysis_notes=data.get("analysis_notes", ""),
+            model=model,
         )
     except (KeyError, ValueError) as e:
         log.warning("Analysis failed for '%s': %s", article.title[:50], e)

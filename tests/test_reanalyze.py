@@ -47,6 +47,18 @@ def test_select_limit_takes_newest_first():
     assert [a.original.url for a in out] == ["https://e/may", "https://e/mar"]
 
 
+def test_select_source_and_since_are_anded():
+    """--source and --since combine (AND), not OR."""
+    from zeitghost.shards import select_for_reanalysis
+    arts = [
+        _analyzed("https://e/fox-new", source="Fox News", published="2026-05-30T00:00:00+00:00"),
+        _analyzed("https://e/fox-old", source="Fox News", published="2026-01-01T00:00:00+00:00"),
+        _analyzed("https://e/cnn-new", source="CNN", published="2026-05-30T00:00:00+00:00"),
+    ]
+    out = select_for_reanalysis(arts, source="Fox News", since="2026-03-01")
+    assert {a.original.url for a in out} == {"https://e/fox-new"}
+
+
 # --- CLI end-to-end (fake provider) ----------------------------------------
 
 class _FakeProvider:
@@ -131,3 +143,31 @@ def test_reanalyze_dry_run_makes_no_calls_or_writes(store_env, monkeypatch):
     assert fake.calls == 0                            # no Claude spend
     [only] = load_articles_from_shards(init_store())
     assert only.parent_shard_id is None               # no revision written
+
+
+def test_reanalyze_rejects_malformed_since(store_env, monkeypatch):
+    """A non-YYYY-MM-DD --since fails loud rather than silently mis-comparing."""
+    from zeitghost.cli import main
+    _seed_one_article()
+    fake = _FakeProvider(score=0.85)
+    monkeypatch.setattr("zeitghost.bias._get_provider", lambda: fake)
+
+    result = CliRunner().invoke(main, ["reanalyze", "--since", "5/1/2026"])
+    assert result.exit_code != 0
+    assert "YYYY-MM-DD" in result.output
+    assert fake.calls == 0
+
+
+def test_reanalyze_stamps_model_via_analyze_article(store_env, monkeypatch):
+    """The .model cleanup: analyze_article itself records the model (not a
+    caller-side patch), so a re-scored shard carries the chosen model."""
+    from zeitghost.cli import main
+    from zeitghost.shards import init_store, load_articles_from_shards
+
+    _seed_one_article()
+    monkeypatch.setattr("zeitghost.bias._get_provider", lambda: _FakeProvider(0.6))
+    result = CliRunner().invoke(
+        main, ["reanalyze", "--limit", "1", "--model", "claude-haiku-test"])
+    assert result.exit_code == 0, result.output
+    [latest] = load_articles_from_shards(init_store())
+    assert latest.model == "claude-haiku-test"
