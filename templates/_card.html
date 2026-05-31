@@ -128,6 +128,16 @@
             <dt>Agent</dt>
             <dd>{{ article.agent or '—' }}</dd>
 
+            <dt>Signed</dt>
+            <dd>
+                {% if article.signed_by %}
+                <span class="hash" title="Ed25519 signer thumbprint: {{ article.signed_by }}">{{ article.signed_by[:16] }}<span class="hash-tail">&hellip;</span></span>
+                <span class="muted">&middot; Ed25519</span>
+                {% else %}
+                <span class="muted">unsigned</span>
+                {% endif %}
+            </dd>
+
             <dt>Parent</dt>
             <dd>
                 {% if article.parent_shard_id %}
@@ -135,6 +145,18 @@
                 <span class="muted">(re-analysis)</span>
                 {% else %}
                 <span class="muted">first revision</span>
+                {% endif %}
+            </dd>
+
+            <dt>Trace</dt>
+            <dd>
+                {% if article.trace_ref %}
+                {# trace_ref is chain:<run_id>#<event_hash> — show the run (the
+                   traces/<run_id>.jsonl filename) and the event-hash prefix. #}
+                {% set _t = article.trace_ref.split('#') %}
+                <span class="hash" title="{{ article.trace_ref }}">{{ _t[0] | replace('chain:', '') }}<span class="muted"> &middot; event {{ _t[1][:8] if _t | length > 1 else '?' }}</span></span>
+                {% else %}
+                <span class="muted">—</span>
                 {% endif %}
             </dd>
 

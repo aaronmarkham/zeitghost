@@ -50,6 +50,7 @@ def ingest(feeds: str, limit: int, max_requests: int | None, dry_run: bool,
                                   article_to_internal_shard, article_to_sw_shard,
                                   build_lineage_index, resolve_signing_seed,
                                   signing_required, SIGNING_KEY_NAME,
+                                  init_trace_emitter,
                                   SCOPE_INTERNAL, SCOPE_SW_ARTICLE)
 
     store = init_store()
@@ -104,16 +105,30 @@ def ingest(feeds: str, limit: int, max_requests: int | None, dry_run: bool,
     sw_lineage = build_lineage_index(store, SCOPE_SW_ARTICLE)
     # `seed` was resolved up front (for the fail-fast require check). Signing is
     # opt-in: when it's None the shards are written unsigned.
+    emitter = trace_path = None
     if analyzed:
         console.print("  Signing shards (ZEITGHOST_SIGNING_KEY configured)"
                       if seed else "  [dim]No signing key — writing unsigned shards[/dim]")
+        # One hash-chained trace log per ingest run; each shard's trace_ref
+        # points back at its shard_created event in this file.
+        emitter, trace_path = init_trace_emitter(store)
     for a in analyzed:
         article_to_internal_shard(a, store, lineage_index=internal_lineage,
-                                  signing_seed=seed)
+                                  signing_seed=seed, emitter=emitter)
         article_to_sw_shard(a, store, lineage_index=sw_lineage,
-                            signing_seed=seed)
+                            signing_seed=seed, emitter=emitter)
     console.print(f"  {len(analyzed) * 2} shards written "
                   f"(internal + sw:article)")
+    if emitter is not None:
+        from spiritwriter.fabric.emitter import verify_chain
+        events = emitter.get_events()
+        console.print(f"  Trace: {len(events)} events recorded → "
+                      f"traces/{trace_path.name}")
+        # Sanity self-check only — verifying a chain we just wrote always
+        # passes barring disk corruption. Real provenance auditing of an old
+        # run is a future `verify-trace <run_id>` command, not this line.
+        if not verify_chain(events):
+            console.print("  [red]Warning: trace chain failed self-verification[/red]")
 
 
 @main.command()

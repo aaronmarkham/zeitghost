@@ -12,9 +12,13 @@ import json
 import logging
 import os
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from spiritwriter.fabric.shard import MemoryShard, ShardAtom, AtomKind, DecayClass
 from spiritwriter.fabric.store import ShardStore
+
+if TYPE_CHECKING:  # keep the emitter import lazy at runtime (invariant #2)
+    from spiritwriter.fabric.emitter import TraceEmitter
 
 from zeitghost import __version__ as _zg_version
 from zeitghost.bias import AnalyzedArticle, DEFAULT_MODEL
@@ -80,11 +84,67 @@ def signing_required(flag: bool = False) -> bool:
     return val in ("1", "true", "yes", "on")
 
 
+def init_trace_emitter(store: ShardStore, run_id: str | None = None
+                       ) -> "tuple[TraceEmitter, Path]":
+    """Create a per-ingest TraceEmitter writing a hash-chained JSONL under the
+    store's `traces/` dir. Returns (emitter, jsonl_path).
+
+    `run_id` defaults to a timestamped id (also embedded in each shard's
+    `trace_ref` as `chain:<run_id>#<event_hash>`, so a shard points back to the
+    exact run + event that produced it). `agent_id` mirrors `_agent_string()`
+    so trace events and shard `agent` atoms name the same producer.
+
+    Lazy import + runtime dir creation keep this off the module-import path
+    (robustness invariant #2).
+    """
+    import uuid
+    from datetime import datetime, timezone
+    from spiritwriter.fabric.emitter import TraceEmitter
+
+    if run_id is None:
+        stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        run_id = f"ingest-{stamp}-{uuid.uuid4().hex[:8]}"
+    out_path = store.root / "traces" / f"{run_id}.jsonl"
+    emitter = TraceEmitter(run_id=run_id, agent_id=_agent_string(),
+                           out_path=str(out_path))
+    return emitter, out_path
+
+
+def _trace_shard(shard: MemoryShard, parent: str | None,
+                 emitter: "TraceEmitter | None") -> None:
+    """Emit this shard's lifecycle events and stamp its `trace_ref`.
+
+    No-op when `emitter` is None (tracing is opt-in, like signing). Emits
+    `shard_created`, points `shard.trace_ref` at that event, then emits
+    `shard_superseded` when the write supersedes a parent revision. Must run
+    BEFORE `_maybe_sign` so the signature covers the trace_ref; `trace_ref` is
+    not part of the content-address, so `shard.shard_id` is unaffected.
+
+    Best-effort / fail-open: a trace emit failure (e.g. an unwritable
+    `traces/` dir) must never block the shard itself from being persisted —
+    signing is the load-bearing provenance half, tracing the lighter one. On
+    failure we log and leave `trace_ref` unset rather than stamping a ref to an
+    event that didn't make it to disk.
+    """
+    if emitter is None:
+        return
+    try:
+        extra = {"parent_shard_id": parent} if parent else {}
+        emitter.shard_created(shard.shard_id, shard.scope, len(shard.atoms), **extra)
+        shard.trace_ref = emitter.current_trace_ref()
+        if parent:
+            emitter.shard_superseded(parent, shard.shard_id)
+    except Exception as e:
+        log.warning("Trace emit failed for shard %s — persisting it untraced: %s",
+                    shard.shard_id[:12], e)
+        shard.trace_ref = None
+
+
 def _maybe_sign(shard: MemoryShard, signing_seed: bytes | None) -> None:
     """Sign `shard` in place when a seed is supplied (sets `signature` and
-    `created_by`). The signature covers {atoms, scope, origin, …} but NOT the
-    content-address, so signing never changes `shard.shard_id` — safe to call
-    before `store.put` and to return the id afterwards."""
+    `created_by`). The signature covers {atoms, scope, origin, trace_ref, …}
+    but NOT the content-address, so signing never changes `shard.shard_id` —
+    safe to call before `store.put` and to return the id afterwards."""
     if signing_seed:
         shard.sign(signing_seed)
 
@@ -228,7 +288,8 @@ def _article_tags(article: AnalyzedArticle) -> list[str]:
 
 def article_to_internal_shard(article: AnalyzedArticle, store: ShardStore,
                               lineage_index: dict[str, str] | None = None,
-                              signing_seed: bytes | None = None
+                              signing_seed: bytes | None = None,
+                              emitter: "TraceEmitter | None" = None,
                               ) -> str:
     """Write the zeitghost-internal shard with full L/R variant data.
 
@@ -323,18 +384,21 @@ def article_to_internal_shard(article: AnalyzedArticle, store: ShardStore,
         tags=_article_tags(article),
         meta={"entity_key": entity},
     )
+    _trace_shard(shard, parent, emitter)
     _maybe_sign(shard, signing_seed)
     store.put(shard)
-    log.debug("Stored zeitghost shard %s for '%s'%s%s",
+    log.debug("Stored zeitghost shard %s for '%s'%s%s%s",
              shard.shard_id[:12], article.original.title[:40],
              f" (revision of {parent[:12]})" if parent else "",
-             " [signed]" if shard.signature else "")
+             " [signed]" if shard.signature else "",
+             " [traced]" if shard.trace_ref else "")
     return shard.shard_id
 
 
 def article_to_sw_shard(article: AnalyzedArticle, store: ShardStore,
                         lineage_index: dict[str, str] | None = None,
-                        signing_seed: bytes | None = None) -> str:
+                        signing_seed: bytes | None = None,
+                        emitter: "TraceEmitter | None" = None) -> str:
     """Write the consumer-agnostic sw:article shard.
 
     Atom keys (`title`, `summary`, etc.) match frio's `shard_from_article()`.
@@ -386,6 +450,7 @@ def article_to_sw_shard(article: AnalyzedArticle, store: ShardStore,
         tags=_article_tags(article),
         meta={"entity_key": entity},
     )
+    _trace_shard(shard, parent, emitter)
     _maybe_sign(shard, signing_seed)
     store.put(shard)
     return shard.shard_id
@@ -457,6 +522,8 @@ def _shard_to_article(shard: MemoryShard) -> AnalyzedArticle | None:
             shard_atom_kinds=atom_kinds,
             model=vals.get("model", ""),
             agent=vals.get("agent", ""),
+            signed_by=shard.created_by or "",
+            trace_ref=shard.trace_ref or "",
         )
     except (ValueError, TypeError) as e:
         log.warning("Failed to reconstruct article from shard %s: %s",
