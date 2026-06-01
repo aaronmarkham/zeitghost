@@ -151,7 +151,7 @@ def _maybe_sign(shard: MemoryShard, signing_seed: bytes | None) -> None:
 
 def _agent_string() -> str:
     """Identify the agent that wrote this shard: zeitghost version +
-    the underlying spiritwriter-core wheel version. Used in shard atoms so
+    the underlying spiritwriter wheel version. Used in shard atoms so
     the card's flip-panel can show what physically produced the analysis."""
     try:
         from importlib.metadata import version, PackageNotFoundError

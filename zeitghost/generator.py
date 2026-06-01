@@ -198,7 +198,7 @@ def generate_site(articles: list[AnalyzedArticle],
     if commit in ("", "unknown"):
         commit = ""
 
-    # Installed spiritwriter-core version. Useful in the footer because the
+    # Installed spiritwriter version. Useful in the footer because the
     # wheel is rebuilt per-deploy from whatever ref CI was pointed at — knowing
     # which release of the underlying lib generated this site closes the
     # provenance loop alongside the commit SHA.

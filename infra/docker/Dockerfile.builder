@@ -2,7 +2,7 @@
 # Zeitghost News Builder
 # Runs `zeitghost ingest && zeitghost build` on a loop, writing /output.
 #
-# Pre-req: run ./build-wheels.sh to build spiritwriter-core wheel into wheels/
+# Pre-req: run ./build-wheels.sh to build the spiritwriter wheel into wheels/
 ###############################################################################
 FROM python:3.12-slim AS builder
 

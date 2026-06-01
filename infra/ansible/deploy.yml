@@ -5,7 +5,7 @@
 # Usage:
 #   ansible-playbook deploy.yml -i inventories/us-ny1/hosts.yml
 #
-# Requires: spiritwriter-core wheel in infra/docker/wheels/
+# Requires: spiritwriter wheel in infra/docker/wheels/
 #   Run ./infra/docker/build-wheels.sh first (or CI does it).
 
 - name: Deploy Zeitghost
@@ -60,7 +60,7 @@
         - pyproject.toml
       notify: restart zeitghost
 
-    - name: Sync spiritwriter-core wheel
+    - name: Sync spiritwriter wheel
       ansible.posix.synchronize:
         src: "{{ zeitghost_src }}/infra/docker/wheels/"
         dest: "{{ zeitghost_dest }}/infra/docker/wheels/"

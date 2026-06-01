@@ -151,7 +151,7 @@ def test_build_renders_with_empty_shards(tmp_path: Path):
 
 
 def test_landing_template_omits_version_chip_when_unknown():
-    """If spiritwriter-core's installed version can't be resolved, the
+    """If spiritwriter's installed version can't be resolved, the
     template must omit the version chip entirely rather than advertise a
     hardcoded fallback. (We previously had `or "0.6.0"` defaults that would
     silently advertise a stale version on a lookup miss.) Footer falls back

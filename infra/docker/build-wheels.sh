@@ -2,11 +2,11 @@
 ###############################################################################
 # Build private dependency wheels for Docker images.
 #
-# Builds spiritwriter-core from the sibling repo into wheels/ so Dockerfiles
-# can install without PyPI access.
+# Builds the spiritwriter wheel from the sibling spiritwriter-core checkout
+# into wheels/ so Dockerfiles can install without PyPI access.
 #
 # Usage: ./build-wheels.sh
-# Expects: ../../../spiritwriter-core to exist (sibling checkout)
+# Expects: ../../../spiritwriter-core to exist (sibling checkout of the repo)
 ###############################################################################
 set -euo pipefail
 
@@ -23,7 +23,7 @@ fi
 mkdir -p "$WHEELS_DIR"
 rm -f "$WHEELS_DIR"/spiritwriter-*.whl
 
-echo "Building spiritwriter-core wheel..."
+echo "Building spiritwriter wheel..."
 pip wheel "$SW_CORE" --no-deps -w "$WHEELS_DIR" 2>&1 | tail -3
 
 echo ""

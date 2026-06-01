@@ -36,7 +36,7 @@ jobs:
           repository: aaronmarkham/spiritwriter-core
           ref: ${{ inputs.sw_core_ref || 'main' }}
           token: ${{ secrets.SW_CORE_PAT }}
-          path: spiritwriter-core
+          path: spiritwriter
 
       - uses: actions/setup-python@v5
         with:
@@ -45,7 +45,7 @@ jobs:
 
       - name: Install deps
         run: |
-          pip install ./spiritwriter-core
+          pip install ./spiritwriter
           pip install -e ".[dev]"
 
       - name: Run tests
@@ -69,7 +69,7 @@ jobs:
           repository: aaronmarkham/spiritwriter-core
           ref: ${{ inputs.sw_core_ref || 'main' }}
           token: ${{ secrets.SW_CORE_PAT }}
-          path: spiritwriter-core
+          path: spiritwriter
 
       - uses: actions/setup-python@v5
         with:
@@ -78,7 +78,7 @@ jobs:
       - name: Build wheel
         run: |
           rm -f infra/docker/wheels/spiritwriter-*.whl
-          pip wheel ./spiritwriter-core --no-deps -w infra/docker/wheels/
+          pip wheel ./spiritwriter --no-deps -w infra/docker/wheels/
 
       - uses: actions/upload-artifact@v4
         with:
