@@ -19,7 +19,7 @@
 #                      (only required on first run; skipped if already up).
 #
 # OPTIONAL ENV VARS:
-#   DEPLOY_USER        Default: frionode. Cross-node convention.
+#   DEPLOY_USER        Default: deploy. Cross-node convention.
 #   SWAP_GB            Default: 2. Skipped if any swap is already enabled.
 #   TAILSCALE_SSH      Default: 0 (off). Set to "1" to enable Tailscale SSH
 #                      (`tailscale up --ssh`). When ON, Tailscale intercepts
@@ -38,14 +38,14 @@
 #   bash /root/bootstrap.sh
 #
 #   # ...verify Tailscale SSH works:
-#   #     tailscale ssh frionode@us-ny1   (from your laptop)
+#   #     tailscale ssh deploy@us-ny1   (from your laptop)
 #   # ...then come back as root and harden:
 #
 #   bash /root/bootstrap.sh --harden
 ###############################################################################
 set -euo pipefail
 
-DEPLOY_USER="${DEPLOY_USER:-frionode}"
+DEPLOY_USER="${DEPLOY_USER:-deploy}"
 SWAP_GB="${SWAP_GB:-2}"
 TAILSCALE_SSH="${TAILSCALE_SSH:-0}"
 HARDEN_MODE=false

@@ -2,7 +2,7 @@
 
 National news with bias analysis and dual left/right variants. A spiritwriter-powered static site generator that fetches NewsAPI articles, analyzes political bias with Claude, generates left- and right-leaning rewrites, and builds a static site with a client-side bias slider.
 
-Sister project to [perseus-news](https://github.com/aaronmarkham/perseus-news) (regional enforcement focus). Both depend on [spiritwriter-core](https://github.com/aaronmarkham/spiritwriter-core) and share the same article shard format (`sw:article`).
+Sister project to perseus-news, a private regional/enforcement-focused sibling. Zeitghost depends on [spiritwriter](https://github.com/aaronmarkham/spiritwriter-core) and shares the same article shard format (`sw:article`).
 
 ## What it does
 
@@ -43,8 +43,8 @@ cd infra/ansible
 ansible-playbook deploy.yml -i inventories/us-ny1/hosts.yml
 ```
 
-CI/CD via GitHub Actions — push to `main` runs tests, builds the spiritwriter-core wheel, and deploys via Tailscale.
+CI/CD via GitHub Actions — push to `main` runs tests, builds the spiritwriter wheel, and deploys via Tailscale.
 
 ## License
 
-Apache License 2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
+Apache License 2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE). Release notes in [CHANGELOG.md](CHANGELOG.md).
