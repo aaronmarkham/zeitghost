@@ -352,3 +352,29 @@ def test_landing_keeps_the_two_measurements_apart():
     # Each number stays in its own section, and the structural one says so
     assert "auto-merge precision" in rendered
     assert "A separate measurement from the resolution numbers above" in rendered
+
+
+def test_spiritwriter_ai_vhost_serves_its_standalone_pages():
+    """Pages published for spiritwriter.ai must be reachable on that vhost.
+
+    Its server block serves /landing.html for any URL it doesn't name, and
+    never tries $uri. So a page added to the generator is silently shadowed
+    by the landing page — a 200 with the wrong content, which is markedly
+    harder to notice than a 404. (It shipped exactly that way once.)
+
+    If you add a standalone page for spiritwriter.ai, give it a location in
+    infra/docker/nginx.conf and add it here.
+    """
+    conf = (REPO_ROOT / "infra" / "docker" / "nginx.conf").read_text()
+    # Isolate the spiritwriter.ai server block from the news one below it.
+    _, _, rest = conf.partition("server_name spiritwriter.ai")
+    block = rest.split("\nserver {")[0]
+
+    for page in ("computed-not-assigned.html",):
+        assert page in block, (
+            f"{page} is generated for spiritwriter.ai but has no nginx "
+            f"location; it will serve the landing page instead"
+        )
+        # And it must resolve to the real file, not fall through.
+        loc = block.split(page, 1)[1].split("}", 1)[0]
+        assert "$uri" in loc, f"{page} location must try $uri"
