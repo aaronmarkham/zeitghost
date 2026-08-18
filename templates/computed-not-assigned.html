@@ -239,10 +239,10 @@ footer p{margin:0 0 8px;max-width:72ch;color:var(--muted)}
   <div class="two">
     <div>
       <p>Connor Hill, a high school student in State College, Pennsylvania, won the 2026 Regeneron Science Talent Search for closing a problem that had stayed open since the 1870s: every <em>noble</em> polyhedron, meaning every solid so uniform that all its faces are alike and all its corners are alike. By 2020 people had found 61 of them, one at a time, with no way to know whether the next one was out there. He proved there are exactly 146, plus two endless families.</p>
-      <p>The interesting part isn't the count — it's how you get to be sure of a count. His method parametrizes the <em>orbits</em> of symmetry groups acting on space, then defines an equivalence relation on those orbits. Enumerate the classes and you have enumerated the solids, because two things in the same class were never two things.</p>
+      <p>The interesting part is how you get to be sure of a count. His method parametrizes the <em>orbits</em> of symmetry groups acting on space, then defines an equivalence relation on those orbits. Enumerate the classes and you have enumerated the solids, because two things in the same class were never two things.</p>
       <p>That is the move this page is about, and it arrives with a guarantee attached: no double-counting, and nothing missed.</p>
       <p>Which is easier to watch than to describe. The solid on the right is written down as a single face — the violet one, its <em>seed</em> — plus three rotations that leave the whole shape looking unchanged. Call them a, b and c. Apply all three to the seed and new faces appear; apply them again to those and more appear, and the readout names the sequence of turns that reached each one. Read <b>a&nbsp;→&nbsp;b&nbsp;→&nbsp;c</b> as an instruction: from the seed, turn by a, then by b, then by c, and you land on that face.</p>
-      <p>It stops on its own at twelve, because by then every further rotation lands on a face already found. One face and three turns is the entire record — the other eleven are worked out on demand, and knowing to stop at twelve is not a judgement call. That is what the method buys.</p>
+      <p>It stops on its own at twelve, because by then every further rotation lands on a face already found. One face and three turns is the entire record — the other eleven are worked out on demand, and the proof says where to stop. That is what the method buys.</p>
     </div>
     <div class="panelbox">
       <canvas id="poly" width="620" height="560" aria-label="A twelve-faced solid built one turn at a time from a single highlighted face"></canvas>
@@ -302,7 +302,7 @@ footer p{margin:0 0 8px;max-width:72ch;color:var(--muted)}
     <div><div class="n warn">0 / 114</div><div class="k">best clean threshold catches</div></div>
   </div>
 
-  <p>That last number is not a typo, and it is not a badly chosen cutoff. There is no cutoff. Here is every one of the two hundred pairs, placed by the score it received:</p>
+  <p>That zero is the measured result, and it holds at every cutoff on the scale. Here is every one of the two hundred pairs, placed by the score it received:</p>
 
   <figure>
     <div class="legend">
@@ -314,7 +314,7 @@ footer p{margin:0 0 8px;max-width:72ch;color:var(--muted)}
     <figcaption id="stripcap"></figcaption>
   </figure>
 
-  <p>The classes do not merely overlap. <strong>Every single pair that must stay apart scores at or above the weakest pair that must merge.</strong> Drag the cutoff and watch both failure modes trade places — there is nowhere to put it that is not wrong in one direction or the other.</p>
+  <p>The two classes sit on top of each other. <strong>Every single pair that must stay apart scores at or above the weakest pair that must merge.</strong> Drag the cutoff and watch the two failure modes trade places. Every position is wrong in one direction or the other.</p>
 
   <div class="thr">
     <div class="thrtop">
@@ -376,8 +376,8 @@ footer p{margin:0 0 8px;max-width:72ch;color:var(--muted)}
     </table>
   </div>
 
-  <p style="margin-top:22px">Which explains the shape of the failure. Similarity here is not a weak signal waiting to be tuned — it points the wrong way. Rewriting a structure changes the text a great deal; altering the structure changes it hardly at all. No cutoff repairs a signal that is anti-correlated with the truth.</p>
-  <p class="note">The rule's 114 of 114 is true by construction and carries no information on its own — canonicalization is exact, so anything less would be a bug rather than a tuning problem. The column that means something is the wrong merges, because a rule that collapsed distinct structures would post perfect recall too, and be useless. Both numbers only mean anything together. And this measures structural variation only: case, whitespace, typos and unicode drift are a different problem, one that scoring handles well. Neither number belongs in the other's sentence.</p>
+  <p style="margin-top:22px">Which explains the shape of the failure. Similarity points the wrong way here. Rewriting a structure changes the text a great deal; altering the structure changes it hardly at all. No cutoff repairs a signal that is anti-correlated with the truth.</p>
+  <p class="note">The rule's 114 of 114 is true by construction and carries no information on its own — canonicalization is exact, so anything less is a bug to fix in code. The column that means something is the wrong merges, because a rule that collapsed distinct structures would post perfect recall too, and be useless. Both numbers only mean anything together. And this measures structural variation only: case, whitespace, typos and unicode drift are a different problem, one that scoring handles well. Neither number belongs in the other's sentence.</p>
 </section>
 
 <!-- 05 -->
