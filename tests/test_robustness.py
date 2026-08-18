@@ -311,3 +311,44 @@ def test_essay_template_degrades_without_build_metadata():
     assert "library · spiritwriter" in rendered
     assert "deploy · local" in rendered
     assert "spiritwriter v" not in rendered
+
+
+def test_landing_links_the_canonical_forms_essay():
+    """The essay is only reachable from the landing page. A landing edit
+    that drops the link silently orphans a published page, so pin it —
+    along with the section that carries it and its nav entry."""
+    from jinja2 import Environment, FileSystemLoader
+
+    env = Environment(
+        loader=FileSystemLoader(str(REPO_ROOT / "templates")),
+        autoescape=True,
+    )
+    rendered = env.get_template("landing.html").render(
+        sw_core_version="0.10.1",
+        zeitghost_commit="abc1234deadbeef",
+    )
+    assert 'href="/computed-not-assigned.html"' in rendered
+    assert 'id="exact"' in rendered
+    assert 'href="#exact"' in rendered
+    # The guide it summarizes is linked too
+    assert "docs/canonical-forms.md" in rendered
+    # Section numbering stays contiguous after the insertion
+    for numeral in ("I.", "II.", "III.", "IV.", "V.", "VI.", "VII."):
+        assert f'<div class="roman">{numeral}</div>' in rendered, numeral
+
+
+def test_landing_keeps_the_two_measurements_apart():
+    """The resolution suite and the structural suite measure different
+    problems. They must not be welded into one combined claim."""
+    from jinja2 import Environment, FileSystemLoader
+
+    env = Environment(
+        loader=FileSystemLoader(str(REPO_ROOT / "templates")),
+        autoescape=True,
+    )
+    rendered = env.get_template("landing.html").render(
+        sw_core_version="", zeitghost_commit="",
+    )
+    # Each number stays in its own section, and the structural one says so
+    assert "auto-merge precision" in rendered
+    assert "A separate measurement from the resolution numbers above" in rendered
