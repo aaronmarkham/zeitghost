@@ -265,6 +265,18 @@ def generate_site(articles: list[AnalyzedArticle],
     )
     log.info("Generated about.html")
 
+    # --- computed-not-assigned.html — canonical forms explainer ------------
+    # Standalone long-form page for spiritwriter.ai (not news.spiritwriter.ai),
+    # rendered like landing.html rather than extending base.html: the news
+    # masthead would be wrong over an essay. Takes base_ctx only for the
+    # footer signature row.
+    essay_tmpl = env.get_template("computed-not-assigned.html")
+    (output_dir / "computed-not-assigned.html").write_text(
+        essay_tmpl.render(**base_ctx),
+        encoding="utf-8",
+    )
+    log.info("Generated computed-not-assigned.html")
+
     # --- analytics.html — overall + distribution + leaning + categories ---
     analytics_tmpl = env.get_template("analytics.html")
     (output_dir / "analytics.html").write_text(

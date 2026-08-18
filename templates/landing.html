@@ -3,16 +3,16 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>spiritwriter — agent memory you own</title>
-<meta name="description" content="Local-first agent memory, provable traces, scoped delegation, and deterministic entity resolution. A library you drop under whatever agent stack you run — your data never leaves your machine. No service, no custody, no rent. Apache 2.0." />
-<meta property="og:title" content="spiritwriter — agent memory you own" />
+<title>spiritwriter — a record your agents can't rewrite</title>
+<meta name="description" content="Hash-chained traces, content-addressed memory, signed delegation, and identity computed rather than assigned. A local-first library you drop under whatever agent stack you run: every claim checkable, nothing quietly alterable. No service, no custody, no rent. Apache 2.0." />
+<meta property="og:title" content="spiritwriter — a record your agents can't rewrite" />
 <meta property="og:description" content="Durable memory, provable traces, scoped delegation, entity resolution. Local-first, no custody, no rent. Apache 2.0." />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://spiritwriter.ai/" />
 <meta property="og:image" content="https://spiritwriter.ai/static/images/spirit-animals/spirit.svg" />
 <meta property="og:site_name" content="spiritwriter" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="spiritwriter — agent memory you own" />
+<meta name="twitter:title" content="spiritwriter — a record your agents can't rewrite" />
 <meta name="twitter:description" content="Durable memory, provable traces, scoped delegation, entity resolution. Local-first, no custody, no rent. Apache 2.0." />
 <meta name="twitter:image" content="https://spiritwriter.ai/static/images/spirit-animals/spirit.svg" />
 <link rel="canonical" href="https://spiritwriter.ai/" />
@@ -105,17 +105,26 @@
     display: flex;
     align-items: baseline;
     justify-content: space-between;
-    gap: 1rem;
+    gap: 0.35rem 1rem;
+    /* Nowrap spans in a nowrap row overflowed between 520 and 768, where
+       neither hide-rule below had kicked in yet. Wrapping degrades at any
+       width instead of at the two we happened to test. */
+    flex-wrap: wrap;
     font-family: var(--mono);
     font-size: 0.66rem;
     letter-spacing: 0.16em;
     text-transform: uppercase;
     color: var(--ink-faint);
   }
-  .topbar-inner .right { display: flex; gap: 1.25rem; }
+  .topbar-inner .right { display: flex; gap: 1.25rem; flex-wrap: wrap; }
   .topbar-inner .right span { white-space: nowrap; }
   @media (max-width: 720px) {
     .topbar-inner .right span:nth-child(2) { display: none; }
+  }
+  @media (max-width: 520px) {
+    /* Phone widths: the tagline alone is wider than the viewport. Keep the
+       imprint and the licence, drop the prose. */
+    .topbar-inner .right span:nth-child(1) { display: none; }
   }
 
   /* ----- main nav ----- */
@@ -173,7 +182,7 @@
   .hero {
     padding: clamp(3rem, 9vw, 7rem) 0 clamp(3rem, 7vw, 6rem);
     display: grid;
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 2.5rem;
     position: relative;
   }
@@ -187,7 +196,8 @@
 
   .hero-eyebrow {
     display: flex;
-    gap: 1.25rem;
+    gap: 0.5rem 1.25rem;
+    flex-wrap: wrap;
     align-items: center;
     color: var(--ink-faint);
     font-family: var(--mono);
@@ -210,11 +220,19 @@
     font-weight: 380;
     font-size: clamp(3.2rem, 11vw, 9.5rem);
     line-height: 0.92;
+    /* Grid item: min-width defaults to auto, which pins the headline to the
+       width of its longest word and pushes the page sideways on a phone. */
+    min-width: 0;
     letter-spacing: -0.025em;
     margin: 0;
     color: var(--ink);
   }
   .hero h1 .breakw { display: block; }
+  @media (max-width: 520px) {
+    /* Below this, 11vw makes the longest word wider than the column.
+       Desktop sizing is deliberately untouched. */
+    .hero h1 { font-size: 9.5vw; }
+  }
   .hero h1 em {
     font-style: italic;
     font-variation-settings: "opsz" 144, "SOFT" 100, "wght" 340;
@@ -238,12 +256,12 @@
 
   .hero-grid {
     display: grid;
-    grid-template-columns: 1.6fr 1fr;
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
     gap: clamp(2rem, 5vw, 5rem);
     align-items: end;
   }
   @media (max-width: 880px) {
-    .hero-grid { grid-template-columns: 1fr; }
+    .hero-grid { grid-template-columns: minmax(0, 1fr); }
   }
 
   .hero-lede {
@@ -321,7 +339,11 @@
   .copy-install {
     display: inline-flex;
     align-items: center;
-    gap: 0.85rem;
+    /* An inline-flex row of nowrap parts is wider than a phone viewport;
+       let it wrap and never exceed its column. */
+    flex-wrap: wrap;
+    max-width: 100%;
+    gap: 0.5rem 0.85rem;
     padding: 0.95rem 1.1rem;
     background: var(--parchment-light);
     border: 1px dashed var(--rule);
@@ -334,6 +356,7 @@
   }
   .copy-install:hover { border-style: solid; border-color: var(--ink); background: var(--parchment-deep); }
   .copy-install .prompt { color: var(--whisper); user-select: none; }
+  .copy-install .label { overflow-wrap: anywhere; }
   .copy-install .copied {
     color: var(--thread);
     font-size: 0.7rem;
@@ -520,12 +543,12 @@
 
   .code-spread {
     display: grid;
-    grid-template-columns: 1fr 1.4fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
     gap: clamp(2rem, 5vw, 4rem);
     align-items: start;
   }
   @media (max-width: 880px) {
-    .code-spread { grid-template-columns: 1fr; }
+    .code-spread { grid-template-columns: minmax(0, 1fr); }
   }
 
   .code-narrative h3 {
@@ -577,6 +600,10 @@
     font-size: 0.82rem;
     line-height: 1.6;
     overflow-x: auto;
+    /* Grid items default to min-width:auto, which pins this box to the
+       width of its widest <pre> line and defeats the overflow-x above.
+       Without this the code sample scrolls the whole page sideways. */
+    min-width: 0;
     position: relative;
     box-shadow: 0 18px 48px -12px rgba(26, 22, 18, 0.18);
   }
@@ -1031,7 +1058,7 @@
   <div class="topbar-inner">
     <span>spiritwriter / library no. <span style="color:var(--seal);">vi</span></span>
     <div class="right">
-      <span>local-first memory for agents — you own it</span>
+      <span>verifiable records for agents — local-first</span>
       <span>no service · no custody</span>
       <span>apache 2.0</span>
     </div>
@@ -1046,6 +1073,7 @@
     <li><a href="#proof">Proof</a></li>
     <li><a href="#adopt">Adopt</a></li>
     <li><a href="#numbers">Numbers</a></li>
+    <li><a href="#exact">Exact</a></li>
     <li><a class="gh" href="https://github.com/aaronmarkham/spiritwriter-core">GitHub ↗</a></li>
   </ul>
 </nav>
@@ -1064,14 +1092,14 @@
     </div>
 
     <h1 class="display">
-      Agent memory
-      <span class="breakw"><em>you own.</em></span>
+      A record your agents
+      <span class="breakw">can't <em>rewrite.</em></span>
     </h1>
 
     <div class="hero-grid">
       <div>
         <p class="hero-lede">
-          Durable memory, provable traces, scoped delegation, and entity resolution — a <em>local-first</em> library you drop under whatever agent stack you already run. Your data never leaves your machine. No service, no custody, no rent.
+          Hash-chained traces, content-addressed memory, signed delegation, and identity computed rather than assigned — a <em>local-first</em> library you drop under whatever agent stack you already run. Every claim it stores can be checked; nothing it records can be quietly altered. Your data never leaves your machine. No service, no custody, no rent.
         </p>
         <div class="cta-row">
           <button type="button" class="copy-install" aria-label="Copy install command">
@@ -1105,15 +1133,15 @@
 
     <div class="manifesto reveal">
       <div class="left">
-        <p class="lede">There's no standard library for the layer beneath the agent. So you keep rebuilding it.</p>
+        <p class="lede">There's no standard library for the layer beneath the agent. So you keep rebuilding it &mdash; and the part everyone skips is the part that would let you prove any of it.</p>
         <div class="signature">— filed under <span style="color:var(--seal)">/substrate</span></div>
       </div>
       <div class="body">
-        <p>Every agentic app re-solves the same problems. Where does what the agent learned live — and how do you keep it from drifting into contradiction? How do you hand a sub-task to another agent without handing over the keys to everything? And when something breaks three steps back, can you <strong>prove</strong> what actually happened?</p>
+        <p>Every agentic app re-solves the same problems. When something goes wrong three steps back, can you <strong>prove</strong> what actually happened &mdash; or only reconstruct it from whatever the run happened to print? Where does what the agent learned live, and how do you keep it from drifting into contradiction? How do you hand a sub-task to another agent without handing over the keys to everything?</p>
 
         <p>So you rebuild the glue for each app, slightly different every time. Or you eat the misalignments, the delegation failures, the memory drift. Or you rent a managed service that takes custody of your data <em>and</em> your latency budget.</p>
 
-        <p>Few teams do provable tracing or scoped entitlements without standing up heavy infrastructure. The layer <strong>beneath</strong> the agent has been left to improvisation — re-glued in every codebase, owned by none of them.</p>
+        <p>Few teams do provable tracing or scoped entitlements without standing up heavy infrastructure, so the hardest question &mdash; <em>what actually happened?</em> &mdash; gets answered by logs the system wrote about itself. The layer <strong>beneath</strong> the agent has been left to improvisation: re-glued in every codebase, owned by none of them, and taken on faith.</p>
       </div>
     </div>
   </section>
@@ -1131,12 +1159,13 @@
     <div class="code-spread">
       <div class="code-narrative reveal">
         <h3>The layer your stack is missing.</h3>
-        <p>spiritwriter is content-addressed memory, hash-chained traces, scoped entitlements, and deterministic entity resolution — composable primitives you dial from <strong>fully public and provable</strong> to <strong>fully private and zero-knowledge</strong> by changing one setting.</p>
+        <p>spiritwriter is content-addressed memory, hash-chained traces, scoped entitlements, computed identity, and deterministic entity resolution. Composable primitives with one property in common: each produces something that can be <strong>checked independently</strong>, without taking the system's word for it. Dial them from <strong>fully public and provable</strong> to <strong>fully private and zero-knowledge</strong> by changing one setting.</p>
         <p>Bring your own everything-else. spiritwriter handles what those layers leave out.</p>
         <ul>
-          <li><span class="k">memory</span><span>content-addressed shards with lineage + decay.</span></li>
-          <li><span class="k">provenance</span><span>hash-chained, signable traces.</span></li>
+          <li><span class="k">memory</span><span>content-addressed shards — same content, same id.</span></li>
+          <li><span class="k">provenance</span><span>hash-chained traces, signable and chain-verifiable.</span></li>
           <li><span class="k">delegation</span><span>scoped entitlements, enforced before decrypt.</span></li>
+          <li><span class="k">identity</span><span>canonical forms, computed rather than registered.</span></li>
           <li><span class="k">resolution</span><span>deterministic entity IDs, no embeddings.</span></li>
         </ul>
       </div>
@@ -1153,7 +1182,7 @@
           </div>
           <div class="layer sw">
             <span class="name">spiritwriter</span>
-            <span class="detail">memory · provenance · delegation · resolution</span>
+            <span class="detail">memory · provenance · delegation · identity · resolution</span>
           </div>
         </figure>
         <p class="stack-note">It's not an agent framework, and it's not a vector database. It's what those sit on.</p>
@@ -1297,13 +1326,56 @@ context = store.<span class="fn">hydrate</span>([ref])    <span class="com"># XM
   </section>
 
   <!-- ============================================================
+       THE EXACT HALF
+       ============================================================ -->
+  <section class="spread" id="exact">
+    <div class="section-head reveal">
+      <div class="roman">VI.</div>
+      <h2>Some things don't need a <em>score.</em></h2>
+      <div class="folio">folio vi — the exact half</div>
+    </div>
+
+    <div class="bear">
+      <div class="bear-prose reveal">
+        <p>Resolution answers <em>are these the same?</em> with a confidence. Some records don't have a confidence to give. Where a structure carries a symmetry it is allowed to have &mdash; a ring of references read from a different starting point, co-equal members listed in another order &mdash; the two records aren't similar. They're the same thing written twice.</p>
+
+        <p>spiritwriter computes the one canonical form of that structure, and a digest of it. Two systems that have never communicated arrive at the same value because <strong>there is only one value to arrive at</strong>. No registry to consult, no identifier service, no coordination beyond the operations themselves.</p>
+
+        <p>Similarity can't stand in for it. Across 200 such pairs the rule settles every one with no wrong merges, while the best cutoff that makes no wrong merges catches <strong>none</strong>. Structural variation isn't a weak signal waiting to be tuned &mdash; the score points the wrong way.</p>
+
+        <p><a href="/computed-not-assigned.html">Computed, not assigned &rarr;</a></p>
+      </div>
+
+      <aside class="bear-aside reveal">
+        <h4>Declared symmetry</h4>
+        <table class="tier-table">
+          <thead>
+            <tr><th>Structure</th><th>Same when</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="tier">ring</td><td>rotated or reflected</td></tr>
+            <tr><td class="tier">cycle</td><td>rotated only &mdash; direction is meaning</td></tr>
+            <tr><td class="tier">grouping</td><td>reordered any way</td></tr>
+            <tr><td class="tier">anchored</td><td>rotated to a known member</td></tr>
+          </tbody>
+        </table>
+
+        <div class="num-fact">
+          <div class="v">114<span style="font-size:0.5em;color:var(--ink-faint);"> / 114</span></div>
+          <div class="l">same-structure pairs settled, <strong>0</strong> wrong merges. The best similarity cutoff that makes no wrong merges catches <strong>0</strong> of them. A separate measurement from the resolution numbers above &mdash; a different problem, not a bigger one.</div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ============================================================
        USED BY
        ============================================================ -->
   <section class="spread" id="ends">
     <div class="section-head reveal">
-      <div class="roman">VI.</div>
+      <div class="roman">VII.</div>
       <h2>What it <em>ends.</em></h2>
-      <div class="folio">folio vi — what you get</div>
+      <div class="folio">folio vii — what you get</div>
     </div>
 
     <table class="ends-table reveal">
@@ -1340,7 +1412,7 @@ context = store.<span class="fn">hydrate</span>([ref])    <span class="com"># XM
        CLOSING CTA
        ============================================================ -->
   <section class="spread closing reveal">
-    <h2 class="lockup">Own your agents' <em>memory.</em></h2>
+    <h2 class="lockup">Own the <em>record.</em></h2>
     <p>One pip install. No service to host, no vector DB to keep alive, no one in the middle of your data. The artifact is yours — commit it, back it up, hand it off.</p>
     <div class="cta-row">
       <button type="button" class="copy-install" aria-label="Copy install command">
@@ -1391,6 +1463,7 @@ context = store.<span class="fn">hydrate</span>([ref])    <span class="com"># XM
       <ul>
         <li><a href="https://github.com/aaronmarkham/spiritwriter-core/blob/main/docs/substrate-flavor.md">substrate flavor</a></li>
         <li><a href="https://github.com/aaronmarkham/spiritwriter-core/blob/main/docs/entity-resolution.md">entity resolution</a></li>
+        <li><a href="https://github.com/aaronmarkham/spiritwriter-core/blob/main/docs/canonical-forms.md">canonical forms</a></li>
         <li><a href="https://github.com/aaronmarkham/spiritwriter-core/blob/main/docs/tracing.md">tracing</a></li>
         <li><a href="https://github.com/aaronmarkham/spiritwriter-core/blob/main/docs/audit.md">audit</a></li>
       </ul>
