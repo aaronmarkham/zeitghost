@@ -1,0 +1,792 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Constellations — spiritwriter</title>
+<meta name="description" content="Rotations, reflections and reorderings make one structure look like many. Computing a single canonical form settles them exactly — measured against 200 pairs where similarity scoring cannot." />
+<meta property="og:title" content="Constellations — picking a figure out of the field" />
+<meta property="og:description" content="Rotations, reflections and reorderings make one structure look like many. Computing a single canonical form settles them exactly — measured against 200 pairs where similarity scoring cannot." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://spiritwriter.ai/constellations.html" />
+<meta property="og:image" content="https://spiritwriter.ai/static/images/spirit-animals/spirit.svg" />
+<meta property="og:site_name" content="spiritwriter" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Constellations — picking a figure out of the field" />
+<meta name="twitter:description" content="Rotations, reflections and reorderings make one structure look like many. Computing a single canonical form settles them exactly — measured against 200 pairs where similarity scoring cannot." />
+<meta name="twitter:image" content="https://spiritwriter.ai/static/images/spirit-animals/spirit.svg" />
+<link rel="canonical" href="https://spiritwriter.ai/constellations.html" />
+<link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet" />
+{# Standalone page, like landing.html — deliberately not extending base.html,
+   whose news masthead ("Daily Bias Index · N articles") would be wrong over an
+   essay. Served at spiritwriter.ai/constellations.html. #}
+<style>
+:root{
+  --plate:#DCE0DC; --paper:#EFF1EE; --sunk:#E7EAE7;
+  --ink:#131C21; --body:#2A363C; --muted:#6E7C78; --rule:#B7BFBA;
+  --invariant:#3B3190; --wash:rgba(59,49,144,.09);
+  --same:#5B4FD6; --diff:#8A6A18; --diff-wash:rgba(138,106,24,.10);
+  --sky:#131C21; --sky-rule:#2A363C; --sky-dim:#7E8C88; --sky-text:#C9D2CE;
+  --lit:#8B7FE8;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --plate:#0E1519; --paper:#162026; --sunk:#1D282E;
+    --ink:#E2E8E5; --body:#C3CDC9; --muted:#8A9995; --rule:#2C3A41;
+    --invariant:#A79CF5; --wash:rgba(167,156,245,.12);
+    --same:#8B7FE8; --diff:#B08A2E; --diff-wash:rgba(176,138,46,.14);
+    --sky:#080D10; --sky-rule:#1E2A30;
+  }
+}
+:root[data-theme="dark"]{
+  --plate:#0E1519; --paper:#162026; --sunk:#1D282E;
+  --ink:#E2E8E5; --body:#C3CDC9; --muted:#8A9995; --rule:#2C3A41;
+  --invariant:#A79CF5; --wash:rgba(167,156,245,.12);
+  --same:#8B7FE8; --diff:#B08A2E; --diff-wash:rgba(176,138,46,.14);
+  --sky:#080D10; --sky-rule:#1E2A30;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--plate);color:var(--ink);
+  font-family:"IBM Plex Sans",system-ui,sans-serif;font-size:16.5px;line-height:1.58;
+  -webkit-font-smoothing:antialiased}
+.wrap{max-width:1000px;margin:0 auto;padding:0 24px}
+header{padding:72px 0 32px}
+.eyebrow{font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--muted);margin:0 0 20px}
+h1{font-family:"Instrument Serif",Georgia,serif;font-weight:400;text-wrap:balance;
+  font-size:clamp(2.5rem,7vw,4.6rem);line-height:.98;letter-spacing:-.015em;margin:0 0 24px}
+h1 em{font-style:italic;color:var(--invariant)}
+.lede{font-size:clamp(1.05rem,2.1vw,1.28rem);line-height:1.5;color:var(--body);
+  max-width:64ch;margin:0}
+h2{font-family:"Instrument Serif",Georgia,serif;font-weight:400;text-wrap:balance;
+  font-size:clamp(1.8rem,3.6vw,2.7rem);line-height:1.06;margin:0 0 20px}
+h3{font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:500;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--muted);margin:0 0 12px}
+p{max-width:64ch;margin:0 0 18px;color:var(--body)}
+section{padding:58px 0;border-top:1px solid var(--rule)}
+.step{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.16em;
+  color:var(--invariant);margin:0 0 14px}
+strong{color:var(--ink);font-weight:600}
+button:focus-visible,input:focus-visible{outline:2px solid var(--invariant);outline-offset:2px}
+
+/* sky */
+.sky{border:1px solid var(--rule);background:var(--sky);position:relative}
+.sky canvas{width:100%;height:auto;display:block}
+.skybar{display:flex;flex-wrap:wrap;gap:7px;padding:14px 16px;
+  border-top:1px solid var(--sky-rule);align-items:center}
+.skybar button{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.05em;
+  padding:8px 12px;background:transparent;border:1px solid #3D4B52;color:var(--sky-text);
+  cursor:pointer}
+.skybar button:hover{border-color:var(--lit);color:#fff}
+.skybar button[aria-pressed="true"]{background:var(--lit);border-color:var(--lit);color:#101820}
+.skycount{margin-left:auto;font-family:"IBM Plex Mono",monospace;font-size:11px;
+  color:var(--sky-dim)}
+.skycount b{color:var(--lit);font-weight:400}
+
+/* panels */
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,330px);gap:44px;align-items:start}
+.panelbox{background:var(--paper);border:1px solid var(--rule);padding:16px}
+.panelbox canvas{width:100%;height:auto;display:block}
+.ctl{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:14px}
+.ctl button,.ringctl button{font-family:"IBM Plex Mono",monospace;font-size:11px;
+  letter-spacing:.07em;text-transform:uppercase;padding:10px 6px;background:transparent;
+  border:1px solid var(--ink);color:var(--ink);cursor:pointer;transition:background .15s,color .15s}
+.ctl button:hover:not(:disabled),.ringctl button:hover{background:var(--ink);color:var(--paper)}
+.ctl button:disabled{opacity:.3;cursor:default}
+.ctl button.wide{grid-column:1/-1}
+.readline{font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--muted);
+  margin-top:12px;line-height:1.55}
+.readline b{color:var(--invariant);font-weight:400}
+
+/* ring */
+.ring-panel{background:var(--paper);border:1px solid var(--rule);
+  display:grid;grid-template-columns:minmax(0,330px) minmax(0,1fr)}
+.ring-stage{border-right:1px solid var(--rule);padding:20px 18px 16px}
+.ring-stage svg{width:100%;height:auto;display:block}
+.node circle{fill:var(--paper);stroke:var(--ink);stroke-width:1.25}
+.node text{font-family:"IBM Plex Mono",monospace;font-size:9.5px;fill:var(--ink);
+  text-anchor:middle;dominant-baseline:middle}
+.node{transition:transform .42s cubic-bezier(.4,.05,.2,1)}
+.chord{stroke:var(--rule);stroke-width:1;fill:none}
+.ringctl{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.ringctl button{flex:1;min-width:88px}
+.readout{padding:20px 22px;display:flex;flex-direction:column;gap:17px;min-width:0}
+.val{font-family:"IBM Plex Mono",monospace;font-size:12.5px;line-height:1.5;
+  word-break:break-word;color:var(--body)}
+.val.fixed{color:var(--invariant);background:var(--wash);padding:9px 11px;
+  border-left:2px solid var(--invariant)}
+.tally{display:flex;border:1px solid var(--rule);margin-top:auto}
+.tally div{flex:1;padding:11px 13px}
+.tally div+div{border-left:1px solid var(--rule)}
+.tally .n{font-family:"Instrument Serif",serif;font-size:2.1rem;line-height:1;
+  font-variant-numeric:tabular-nums}
+.tally .n.fixed{color:var(--invariant)}
+.tally .k{font-family:"IBM Plex Mono",monospace;font-size:9.5px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--muted);margin-top:4px}
+
+/* measurement */
+.headline{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--rule);
+  margin:0 0 26px}
+.headline>div{background:var(--paper);padding:15px 17px}
+.headline>div+div{border-left:1px solid var(--rule)}
+.headline .n{font-family:"Instrument Serif",serif;font-size:2.4rem;line-height:1;
+  font-variant-numeric:tabular-nums}
+.headline .n.good{color:var(--same)}
+.headline .n.warn{color:var(--diff)}
+.headline .k{font-family:"IBM Plex Mono",monospace;font-size:9.5px;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--muted);margin-top:5px}
+figure{margin:0 0 26px;background:var(--paper);border:1px solid var(--rule);padding:18px 20px}
+figcaption{font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--muted);
+  line-height:1.55;margin-top:12px}
+.legend{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:14px;
+  font-family:"IBM Plex Mono",monospace;font-size:11px}
+.legend span{display:flex;align-items:center;gap:7px;color:var(--body)}
+.swatch{width:11px;height:11px;flex:none;border-radius:50%}
+.strip{width:100%;height:auto;display:block;overflow:visible}
+
+.thr{background:var(--paper);border:1px solid var(--rule);padding:16px 20px;margin:0 0 26px}
+.thrtop{display:flex;gap:14px;align-items:baseline;flex-wrap:wrap;margin-bottom:10px}
+.thrtop label{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--muted)}
+.thrtop output{font-family:"Instrument Serif",serif;font-size:1.8rem;line-height:1;
+  color:var(--diff);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--diff)}
+.throut{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+.throut div{border-left:2px solid var(--rule);padding-left:12px}
+.throut .n{font-family:"IBM Plex Mono",monospace;font-size:15px;color:var(--ink);
+  font-variant-numeric:tabular-nums}
+.throut .k{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--muted);margin-top:3px}
+
+.verdicts{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--rule);
+  background:var(--paper)}
+.vcell{padding:15px 18px;min-width:0}
+.vcell+.vcell{border-left:1px solid var(--rule)}
+.vtag{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.1em;
+  text-transform:uppercase;padding:5px 9px;display:inline-block;margin-bottom:9px}
+.vtag.ok{background:var(--same);color:var(--paper)}
+.vtag.no{background:var(--diff);color:var(--paper)}
+.vcell p{margin:0;font-size:14px;max-width:none}
+.vscore{font-family:"IBM Plex Mono",monospace;font-size:13px;color:var(--muted);
+  margin-top:7px;font-variant-numeric:tabular-nums}
+.disagree{border:1px solid var(--rule);border-top:0;background:var(--diff-wash);
+  padding:13px 18px;font-size:14.5px;color:var(--ink)}
+.disagree.quiet{background:var(--sunk);color:var(--muted)}
+
+table{border-collapse:collapse;width:100%;margin-top:8px;font-size:13.5px}
+.scroll{overflow-x:auto}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--rule);color:var(--body)}
+th{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--muted);font-weight:500}
+td.num{text-align:right;font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums}
+td.hi{color:var(--diff);font-weight:600}
+
+.stops{border:1px solid var(--rule);margin-top:8px}
+.stops>div{background:var(--paper);padding:15px 18px;border-top:1px solid var(--rule)}
+.stops>div:first-child{border-top:0}
+.stops p{margin:0;max-width:none;font-size:15px;color:var(--ink)}
+.stops p+p{margin-top:5px;color:var(--muted);font-size:14px}
+.note{font-family:"IBM Plex Mono",monospace;font-size:11.5px;line-height:1.6;
+  color:var(--muted);max-width:70ch}
+footer{padding:38px 0 64px;border-top:1px solid var(--rule);
+  font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:var(--muted)}
+footer a{color:var(--invariant);text-decoration:none;border-bottom:1px solid var(--rule)}
+footer p{margin:0 0 8px;max-width:72ch;color:var(--muted)}
+
+@media (max-width:820px){
+  .two,.ring-panel,.verdicts,.throut{grid-template-columns:1fr}
+  .ring-stage{border-right:0;border-bottom:1px solid var(--rule)}
+  .vcell+.vcell{border-left:0;border-top:1px solid var(--rule)}
+  .headline{grid-template-columns:1fr}
+  .headline>div+div{border-left:0;border-top:1px solid var(--rule)}
+  .skycount{margin-left:0;width:100%}
+  section{padding:44px 0}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <p class="eyebrow">On figures, fields, and one idea borrowed from geometry</p>
+  <h1>Pick a <em>constellation</em>.<br>Reason inside it.</h1>
+  <p class="lede">Nobody thinks about the whole sky. You pick out a figure — a handful of stars and the lines between them — give it a name, and from then on you can point at it, hand it to someone else, and reason inside it without loading the rest. This is about what happens when you do that to information, and where the idea for doing it came from.</p>
+</header>
+
+<!-- 01 -->
+<section>
+  <p class="step">01 · THE FIELD</p>
+  <h2>Everything visible is not the same as anything thinkable</h2>
+  <p>This is why graph databases seduce and then stall. The inspector renders the whole field at once, every node equally bright, and it is genuinely beautiful for about a week. Then comes the question nobody has a good answer to: <em>now what?</em> There is nothing to hold. No figure, nothing named, nothing bounded, nothing you can come back to next month and know means the same thing.</p>
+  <p>Pick a figure below. The rest of the sky doesn't go away — it just stops competing for attention.</p>
+
+  <div class="sky">
+    <canvas id="sky" width="960" height="520" aria-label="A field of information nodes; selecting a figure lights a small named subset"></canvas>
+    <div class="skybar" id="skybar"></div>
+  </div>
+  <p class="note" style="margin-top:14px">The stars drift the whole time you watch — every one of them, slowly, in its own direction. The figure holds anyway. What's stored is which stars and which lines, never where they happened to be.</p>
+  <p style="margin-top:18px">That last part is the one worth sitting with. Orion has been Orion for as long as anyone has written it down, and not one of its stars has stayed put. The figure is stable because it was never a description of positions. It's a selection and a set of relationships — and those are cheap to keep, cheap to name, and survive everything underneath them moving.</p>
+</section>
+
+<!-- 02 -->
+<section>
+  <p class="step">02 · WHERE THE IDEA CAME FROM</p>
+  <h2>Knowing when the list is finished</h2>
+  <div class="two">
+    <div>
+      <p>Connor Hill, a high school student in State College, Pennsylvania, won the 2026 Regeneron Science Talent Search for closing a problem that had stayed open since the 1870s: every <em>noble</em> polyhedron, meaning every solid so uniform that all its faces are alike and all its corners are alike. By 2020 people had found 61 of them, one at a time, with no way to know whether the next one was out there. He proved there are exactly 146, plus two endless families.</p>
+      <p>The interesting part isn't the count — it's how you get to be sure of a count. His method parametrizes the <em>orbits</em> of symmetry groups acting on space, then defines an equivalence relation on those orbits. Enumerate the classes and you have enumerated the solids, because two things in the same class were never two things.</p>
+      <p>That is the move this page is about, and it arrives with a guarantee attached: no double-counting, and nothing missed.</p>
+      <p>Which is easier to watch than to describe. The solid on the right is written down as a single face — the violet one, its <em>seed</em> — plus three rotations that leave the whole shape looking unchanged. Call them a, b and c. Apply all three to the seed and new faces appear; apply them again to those and more appear, and the readout names the sequence of turns that reached each one. Read <b>a&nbsp;→&nbsp;b&nbsp;→&nbsp;c</b> as an instruction: from the seed, turn by a, then by b, then by c, and you land on that face.</p>
+      <p>It stops on its own at twelve, because by then every further rotation lands on a face already found. One face and three turns is the entire record — the other eleven are worked out on demand, and knowing to stop at twelve is not a judgement call. That is what the method buys.</p>
+    </div>
+    <div class="panelbox">
+      <canvas id="poly" width="620" height="560" aria-label="A twelve-faced solid built one turn at a time from a single highlighted face"></canvas>
+      <div class="ctl">
+        <button id="pstep" type="button">Apply the turns</button>
+        <button id="pall" type="button">Run to the end</button>
+        <button id="preset" class="wide" type="button">Back to the seed alone</button>
+      </div>
+      <p class="readline">Written down: <b>1 face + 3 turns (a, b, c)</b><br>Worked out so far: <b id="pcount">1 face</b><br>Newest face, from the seed: <b id="pword">the seed itself</b></p>
+    </div>
+  </div>
+</section>
+
+<!-- 03 -->
+<section>
+  <p class="step">03 · THE CROSSING</p>
+  <h2>A figure with no polyhedron in it</h2>
+  <p>The solids were never the point — they were the most visible case of the point, which is that a relationship can hold steady while everything expressing it moves. Take that away from geometry entirely and it still works.</p>
+  <p>Take a closed loop of see-also references: five headings, each pointing to the next, the last back to the first. A constellation, essentially. Nothing in it says where to begin or which way to read, so two people can record the same loop and produce different strings. Rotate it or flip it: the <em>as recorded</em> line changes every time, while the <em>authorized form</em> and its key underneath never do.</p>
+
+  <div class="ring-panel">
+    <div class="ring-stage">
+      <svg id="ring" viewBox="0 0 300 300" role="img" aria-label="A ring of five subject headings">
+        <circle class="chord" cx="150" cy="150" r="104"></circle>
+        <g id="nodes"></g>
+      </svg>
+      <div class="ringctl">
+        <button id="rot" type="button">Rotate</button>
+        <button id="flip" type="button">Flip</button>
+      </div>
+    </div>
+    <div class="readout">
+      <div><h3>As recorded</h3><div class="val" id="recorded"></div></div>
+      <div><h3>Authorized form</h3><div class="val fixed" id="canon"></div></div>
+      <div><h3>Key</h3><div class="val fixed" id="digest"></div></div>
+      <div class="tally">
+        <div><div class="n" id="seen">1</div><div class="k">recordings seen</div></div>
+        <div><div class="n fixed" id="forms">1</div><div class="k">authorized forms</div></div>
+      </div>
+    </div>
+  </div>
+  <p class="note" style="margin-top:14px">Ten ways to write this loop down. One authorized form, one key — both computed, neither assigned.</p>
+  <p style="margin-top:20px">Which is authority control, arrived at sideways. Librarianship has collocated variant forms under one authorized heading since Cutter set out the objective in 1876 — and it canonicalizes composed structures too, through citation order in subject strings and Ranganathan's facet formula. Both work the same way: type each part, then prescribe an order by type.</p>
+  <p>What the geometry adds is the case where the parts carry no distinguishing role at all. A loop has no first element and no direction; a grouping of co-equal terms has no principal member. There is no facet to assign, so an order cannot be prescribed — it has to be computed. And a computed representative has a property a prescribed one lacks: two systems that have never communicated arrive at the same answer, with no cataloguer in between.</p>
+</section>
+
+<!-- 04 -->
+<section>
+  <p class="step">04 · MEASURED</p>
+  <h2>The case scoring cannot reach</h2>
+  <p>The obvious objection is that none of this is necessary — that a similarity score with a sensible cutoff would settle the same records without the apparatus. So it was measured, against the alternative, on the structures the apparatus is actually for.</p>
+  <p>Two hundred pairs across three collections: undirected rings, directed cycles where reversal means something different, and unordered groupings. Every pair carries known ground truth. A rotated ring <em>is</em> the same ring. A ring with two headings swapped is <em>not</em>. Each pair is then decided twice — once by comparing canonical keys, once by scoring the text as written.</p>
+
+  <div class="headline">
+    <div><div class="n">200</div><div class="k">pairs, ground truth known</div></div>
+    <div><div class="n good">114 / 114</div><div class="k">settled by rule · 0 wrong</div></div>
+    <div><div class="n warn">0 / 114</div><div class="k">best clean threshold catches</div></div>
+  </div>
+
+  <p>That last number is not a typo, and it is not a badly chosen cutoff. There is no cutoff. Here is every one of the two hundred pairs, placed by the score it received:</p>
+
+  <figure>
+    <div class="legend">
+      <span><span class="swatch" style="background:var(--same)"></span> same structure — must merge (114)</span>
+      <span><span class="swatch" style="background:var(--diff)"></span> different structure — must stay apart (86)</span>
+    </div>
+    <svg class="strip" id="strip" viewBox="0 0 700 190" role="img"
+      aria-label="Similarity scores for 200 pairs. The two classes overlap completely; every different-structure pair scores at or above the weakest same-structure pair."></svg>
+    <figcaption id="stripcap"></figcaption>
+  </figure>
+
+  <p>The classes do not merely overlap. <strong>Every single pair that must stay apart scores at or above the weakest pair that must merge.</strong> Drag the cutoff and watch both failure modes trade places — there is nowhere to put it that is not wrong in one direction or the other.</p>
+
+  <div class="thr">
+    <div class="thrtop">
+      <label for="thr">Similarity cutoff</label>
+      <output id="thrval">0.80</output>
+    </div>
+    <input type="range" id="thr" min="0.5" max="1" step="0.05" value="0.8"
+      aria-label="Similarity cutoff for the scoring baseline">
+    <div class="throut">
+      <div><div class="n" id="thrcaught"></div><div class="k">same-structure pairs caught</div></div>
+      <div><div class="n" id="thrmerged"></div><div class="k">different structures wrongly merged</div></div>
+    </div>
+  </div>
+
+  <p>The same disagreement, one pair at a time. Rearrange the ring and watch the two verdicts come apart — the rule reads the structure, the score reads the string.</p>
+
+  <div class="ring-panel">
+    <div class="ring-stage">
+      <svg id="ring2" viewBox="0 0 300 300" role="img" aria-label="A ring of five subject headings, rearranged">
+        <circle class="chord" cx="150" cy="150" r="104"></circle>
+        <g id="nodes2"></g>
+      </svg>
+      <div class="ringctl">
+        <button id="rot2" type="button">Rotate</button>
+        <button id="flip2" type="button">Flip</button>
+        <button id="swap2" type="button">Swap two</button>
+      </div>
+    </div>
+    <div class="readout" style="gap:0;padding:0">
+      <div class="verdicts" style="border:0;border-bottom:1px solid var(--rule)">
+        <div class="vcell">
+          <h3>By rule</h3>
+          <span class="vtag ok" id="rtag">same loop</span>
+          <p id="rsay"></p>
+        </div>
+        <div class="vcell">
+          <h3>By score</h3>
+          <span class="vtag ok" id="stag">same loop</span>
+          <p id="ssay"></p>
+          <div class="vscore" id="sval"></div>
+        </div>
+      </div>
+      <div class="disagree" id="disagree"></div>
+    </div>
+  </div>
+
+  <div class="scroll">
+    <table>
+      <caption class="note" style="text-align:left;margin:14px 0 6px">Mean similarity by relation — the pairs that must stay apart score highest.</caption>
+      <thead><tr><th>Relation</th><th>Ground truth</th>
+        <th style="text-align:right">Pairs</th><th style="text-align:right">Settled by rule</th>
+        <th style="text-align:right">Mean score</th></tr></thead>
+      <tbody>
+        <tr><td>rotation</td><td>same</td><td class="num">26</td><td class="num">26</td><td class="num">0.690</td></tr>
+        <tr><td>reflection</td><td>same</td><td class="num">19</td><td class="num">19</td><td class="num">0.546</td></tr>
+        <tr><td>permutation</td><td>same</td><td class="num">69</td><td class="num">69</td><td class="num">0.610</td></tr>
+        <tr><td>sibling</td><td>different</td><td class="num">86</td><td class="num">0</td><td class="num hi">0.729</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p style="margin-top:22px">Which explains the shape of the failure. Similarity here is not a weak signal waiting to be tuned — it points the wrong way. Rewriting a structure changes the text a great deal; altering the structure changes it hardly at all. No cutoff repairs a signal that is anti-correlated with the truth.</p>
+  <p class="note">The rule's 114 of 114 is true by construction and carries no information on its own — canonicalization is exact, so anything less would be a bug rather than a tuning problem. The column that means something is the wrong merges, because a rule that collapsed distinct structures would post perfect recall too, and be useless. Both numbers only mean anything together. And this measures structural variation only: case, whitespace, typos and unicode drift are a different problem, one that scoring handles well. Neither number belongs in the other's sentence.</p>
+</section>
+
+<!-- 05 -->
+<section>
+  <p class="step">05 · NOT A NEW IDEA</p>
+  <h2>The same move, made five times over</h2>
+  <p>Nothing here is an invention. Computing one agreed form for a structure is a technique that separate fields have arrived at independently, mostly without reading each other, over about fifty years.</p>
+
+  <div class="stops">
+    <div>
+      <p><b>Chemistry</b> — canonical SMILES, and later InChI.</p>
+      <p>One molecular structure, one string, so any two databases naming the same compound produce the same identifier. In industrial use for decades.</p>
+    </div>
+    <div>
+      <p><b>Graph theory</b> — canonical labelling, as in nauty and Traces.</p>
+      <p>Relabel a graph into the one form all its equivalent labellings share. Refined continuously since the 1970s.</p>
+    </div>
+    <div>
+      <p><b>The semantic web</b> — RDF dataset canonicalization.</p>
+      <p>Put a graph into a fixed form so it can be hashed and signed, and so two parties can verify they hold the same thing.</p>
+    </div>
+    <div>
+      <p><b>String algorithms</b> — Booth's least-rotation algorithm, 1980.</p>
+      <p>The exact routine settling the rings on this page. Textbook material, older than most of the systems that would benefit from it.</p>
+    </div>
+    <div>
+      <p><b>Cataloguing</b> — citation order, and Ranganathan's facet formula.</p>
+      <p>Compound subjects reduced to one prescribed string. The oldest entry on the list by a wide margin, and the only one built for people rather than machines.</p>
+    </div>
+  </div>
+
+  <p style="margin-top:26px">Convergence like that is the strongest evidence a technique gets. Five fields reaching the same move independently means the problem is real and the solution close to forced — not a fashion.</p>
+  <p>And every one of those adoptions happened under the same condition: <strong>two parties needing to agree on identity without coordinating first.</strong> That is the trigger, and it also marks where the technique isn't needed.</p>
+</section>
+
+<!-- 06 -->
+<section>
+  <p class="step">06 · WHAT IT'S FOR</p>
+  <h2>Twenty rules outlast twenty million names</h2>
+  <p>You can always register an identifier instead of computing one. Wikidata does exactly that — every item gets an assigned code, and the world maps into it. It works extremely well, and it knows things no computed form ever will, such as that Twain and Clemens are one person.</p>
+  <p>But a registry presumes three things: that it exists, that everyone can reach it, and that someone maintains it. The case this was built for has none of them — independent programs holding fragments of data and a handful of shared rules, with no backend to consult and no authority to ask. A computed form is the only kind of agreement two parties can reach without having met.</p>
+
+  <p style="margin-top:26px">Which is the property worth naming, because everything on this page quietly depends on it. The solid is a single face and three turns. The ring is five headings and a statement of which differences don't count. In both cases the artifact carries its own construction rules, so whatever picks it up can work with it from itself alone — no schema to fetch, no documentation to consult, no prior arrangement with whoever wrote it.</p>
+  <p>The argument is a familiar one in a different register. Description held in the object or description held in the catalogue; metadata embedded in the file or resolved from a record elsewhere; a preservation package built to be intelligible after the system that made it is gone. The question of how much a thing should carry about itself is not new, and the answer has never been all or nothing.</p>
+  <p>What a self-describing form does is not remove the need for agreement — it moves it. Everyone still has to agree on the handful of primitives: what the operations are, what counts as a difference, how the parts combine. But that is a small set, settled once, and it does not grow. The alternative is agreeing on the identifiers themselves, which is an enormous set that grows forever and needs somebody to keep it. <strong>Twenty rules held in common will outlast twenty million names held in a register.</strong></p>
+
+  <h3 style="margin-top:38px">Two things it will not do</h3>
+  <div class="stops">
+    <div>
+      <p><b>It runs one way.</b></p>
+      <p>Every turn of a solid can be undone; almost no real normalization can. Dropping dates or folding case throws away something it cannot put back, so this moves from variant toward authorized and never back out.</p>
+    </div>
+    <div>
+      <p><b>It reads no meaning.</b></p>
+      <p>It collapses only the differences you can state in advance. Everything else still needs scoring, or judgment, or a person — and no set of primitives will ever let something derive from first principles that Twain and Clemens were one man.</p>
+    </div>
+  </div>
+  <p style="margin-top:26px">So let the shape of a thing carry its own rules, and leave what it means to the people who know. An idea travelled out of a mathematics paper about solids, through a filing rule, into working code that settles every structural variant put to it and wrongly merges none — and picked up a way of seeing along the way that turns out to describe half the hard problems in keeping information over time. Figures over fields. The rule rather than the copies. What holds while everything underneath it drifts.</p>
+</section>
+
+<footer>
+  <p>Connor Hill, <em>The complete set of noble polyhedra</em> — <a href="https://arxiv.org/abs/2607.28711">arxiv.org/abs/2607.28711</a></p>
+  <p>His code and shape library — <a href="https://github.com/Plasmath/noble-tools-revised">github.com/Plasmath/noble-tools-revised</a></p>
+  <p>Project profile — <a href="https://www.societyforscience.org/regeneron-sts/2026-student-finalists/connor-hill/">Society for Science</a></p>
+  <p style="margin-top:16px">Solid coordinates are Hill's published data. The sky, the solid and the rings are computed live in your browser. The two hundred pairs, the scores and the sweep are measured output from the project's structural-accuracy harness — same scorer, same corpora, nothing staged.</p>
+  <p style="margin-top:16px">
+    <a href="/">spiritwriter.ai</a>
+    {% if sw_core_version %}&middot; library · spiritwriter v{{ sw_core_version }}{% else %}&middot; library · spiritwriter{% endif %}
+    {% if zeitghost_commit %}&middot; deploy · <a href="https://github.com/aaronmarkham/zeitghost/commit/{{ zeitghost_commit }}">{{ zeitghost_commit[:7] }}</a>{% else %}&middot; deploy · local{% endif %}
+  </p>
+</footer>
+
+</div>
+{% raw %}
+<script>
+const STAR = {"v":[[0.0,1.0,1.618],[0.0,-1.0,1.618],[1.618,0.0,1.0],[-1.618,0.0,1.0],[1.0,1.618,0.0],[-1.0,1.618,0.0],[1.0,-1.618,0.0],[-1.0,-1.618,0.0],[1.618,0.0,-1.0],[-1.618,0.0,-1.0],[0.0,1.0,-1.618],[0.0,-1.0,-1.618]],"seed":[0,8,5,2,10],"gens":[[0,1,3,2,5,4,7,6,9,8,10,11],[1,0,2,3,6,7,4,5,8,9,11,10],[0,2,1,4,3,5,6,8,7,10,9,11]]};
+/* Exact output of the project's own scorer for all 120 arrangements of the
+   ring: [similarity vs the authored form, 1 if the rule calls it the same loop].
+   Precomputed rather than reimplemented, so the widget cannot drift from what
+   the harness actually measured. */
+const PERM = {"01234":[1.0,1],"01243":[0.846,0],"01324":[0.877,0],"01342":[0.877,0],"01423":[0.723,0],"01432":[0.723,0],"02134":[0.877,0],"02143":[0.723,0],"02314":[0.754,0],"02341":[0.754,0],"02413":[0.6,0],"02431":[0.655,0],"03124":[0.723,0],"03142":[0.6,0],"03214":[0.655,0],"03241":[0.621,0],"03412":[0.586,0],"03421":[0.552,0],"04123":[0.621,0],"04132":[0.552,0],"04213":[0.586,0],"04231":[0.518,0],"04312":[0.518,0],"04321":[0.292,1],"10234":[0.846,0],"10243":[0.769,0],"10324":[0.818,0],"10342":[0.818,0],"10423":[0.646,0],"10432":[0.646,0],"12034":[0.815,1],"12043":[0.731,0],"12304":[0.746,0],"12340":[0.815,1],"12403":[0.615,0],"12430":[0.688,0],"13024":[0.688,0],"13042":[0.577,0],"13204":[0.629,0],"13240":[0.645,0],"13402":[0.577,0],"13420":[0.531,0],"14023":[0.615,0],"14032":[0.531,0],"14203":[0.569,0],"14230":[0.5,0],"14302":[0.5,0],"14320":[0.281,0],"20134":[0.877,0],"20143":[0.769,0],"20314":[0.781,0],"20341":[0.781,0],"20413":[0.625,0],"20431":[0.664,0],"21034":[0.818,0],"21043":[0.731,0],"21304":[0.75,0],"21340":[0.793,0],"21403":[0.613,0],"21430":[0.657,0],"23014":[0.746,0],"23041":[0.719,0],"23104":[0.75,0],"23140":[0.692,1],"23401":[0.692,1],"23410":[0.615,0],"24013":[0.613,0],"24031":[0.548,0],"24103":[0.625,0],"24130":[0.535,0],"24301":[0.581,0],"24310":[0.443,0],"30124":[0.723,0],"30142":[0.6,0],"30214":[0.664,0],"30241":[0.625,0],"30412":[0.581,0],"30421":[0.548,0],"31024":[0.688,0],"31042":[0.577,0],"31204":[0.645,0],"31240":[0.629,0],"31402":[0.531,0],"31420":[0.577,0],"32014":[0.719,0],"32041":[0.746,0],"32104":[0.793,0],"32140":[0.75,0],"32401":[0.615,0],"32410":[0.692,1],"34012":[0.581,0],"34021":[0.5,0],"34102":[0.531,0],"34120":[0.443,0],"34201":[0.552,0],"34210":[0.452,0],"40123":[0.621,0],"40132":[0.552,0],"40213":[0.625,0],"40231":[0.548,0],"40312":[0.518,0],"40321":[0.346,0],"41023":[0.615,0],"41032":[0.531,0],"41203":[0.613,0],"41230":[0.548,0],"41302":[0.5,0],"41320":[0.346,0],"42013":[0.615,0],"42031":[0.581,0],"42103":[0.657,0],"42130":[0.581,0],"42301":[0.577,0],"42310":[0.484,0],"43012":[0.692,1],"43021":[0.552,0],"43102":[0.615,0],"43120":[0.452,0],"43201":[0.615,0],"43210":[0.484,0]};
+const POS=[0.281,0.292,0.346,0.346,0.346,0.418,0.419,0.438,0.443,0.443,0.452,0.462,0.465,0.469,0.477,0.484,0.484,0.5,0.5,0.5,0.5,0.5,0.509,0.509,0.516,0.516,0.516,0.518,0.527,0.531,0.531,0.531,0.531,0.531,0.535,0.538,0.543,0.548,0.548,0.552,0.557,0.558,0.569,0.577,0.577,0.581,0.581,0.581,0.582,0.585,0.613,0.613,0.614,0.615,0.615,0.615,0.615,0.615,0.618,0.621,0.625,0.625,0.625,0.629,0.631,0.636,0.636,0.636,0.645,0.645,0.645,0.645,0.645,0.646,0.651,0.654,0.657,0.688,0.688,0.692,0.704,0.719,0.721,0.724,0.731,0.731,0.731,0.742,0.742,0.746,0.75,0.75,0.75,0.75,0.769,0.769,0.778,0.781,0.781,0.781,0.791,0.791,0.793,0.806,0.806,0.815,0.818,0.818,0.818,0.843,0.846,0.846,0.846,0.886];
+const NEG=[0.448,0.448,0.448,0.515,0.552,0.557,0.586,0.586,0.6,0.618,0.621,0.621,0.621,0.621,0.636,0.636,0.636,0.636,0.636,0.636,0.636,0.636,0.655,0.655,0.69,0.697,0.697,0.697,0.7,0.7,0.704,0.704,0.721,0.721,0.723,0.723,0.723,0.723,0.724,0.724,0.724,0.724,0.727,0.727,0.727,0.741,0.741,0.743,0.746,0.754,0.758,0.771,0.782,0.786,0.786,0.793,0.793,0.8,0.8,0.818,0.818,0.818,0.818,0.818,0.818,0.818,0.818,0.818,0.818,0.828,0.828,0.828,0.828,0.828,0.828,0.836,0.836,0.836,0.846,0.846,0.877,0.877,0.877,0.886,0.886,0.926];
+
+const $ = id => document.getElementById(id);
+const SEP = "\u0000";
+async function sha(t){
+  const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(t));
+  return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, "0")).join("");
+}
+
+/* ══ 01 · the sky ═════════════════════════════════════════════ */
+const FIGURES = [
+  {name: "Cartography loop",
+   stars: [["Cartography",.22,.26],["Map projections",.33,.19],["Geodesy",.40,.31],
+           ["Surveying",.32,.42],["Topographic mapping",.20,.38]],
+   edges: [[0,1],[1,2],[2,3],[3,4],[4,0]]},
+  {name: "Clemens authority",
+   stars: [["Clemens, Samuel L.",.62,.30],["Twain, Mark",.72,.21],["Clemens, S.",.74,.38],
+           ["Samuel Clemens",.55,.21],["Mark Twain",.54,.41],["Clemens, 1835-1910",.67,.45]],
+   edges: [[0,1],[0,2],[0,3],[0,4],[0,5]]},
+  {name: "Release 4.2",
+   stars: [["4.0",.16,.70],["4.1",.28,.75],["4.1.3",.39,.68],["4.2",.51,.76],
+           ["4.2.1",.63,.69],["4.2.4",.75,.77],["4.3-rc",.86,.68]],
+   edges: [[0,1],[1,2],[2,3],[3,4],[4,5],[5,6]]},
+];
+const sc = $("sky"), scx = sc.getContext("2d");
+let active = null;
+function rng(seed){ return () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296; }
+const r = rng(20260817);
+const FIELD = Array.from({length: 300}, () => ({
+  x: r(), y: r(), m: 0.25 + r() * 0.75,
+  vx: (r() - 0.5) * 0.000018, vy: (r() - 0.5) * 0.000018,
+}));
+FIGURES.forEach(f => f.pts = f.stars.map(([label, x, y]) => ({
+  label, x, y, vx: (r() - 0.5) * 0.000016, vy: (r() - 0.5) * 0.000016,
+})));
+function skyDraw(t){
+  const W = sc.width, H = sc.height;
+  scx.fillStyle = getComputedStyle(document.body).getPropertyValue("--sky").trim() || "#131C21";
+  scx.fillRect(0, 0, W, H);
+  const dim = active !== null ? 0.30 : 1;
+  for (const s of FIELD){
+    const x = (s.x + s.vx * t) * W, y = (s.y + s.vy * t) * H;
+    scx.beginPath(); scx.arc(x, y, 0.7 + s.m * 1.5, 0, 7);
+    scx.fillStyle = `rgba(233,238,235,${(0.16 + s.m * 0.5) * dim})`;
+    scx.fill();
+  }
+  FIGURES.forEach((f, fi) => {
+    const on = active === fi;
+    const P = f.pts.map(p => [(p.x + p.vx * t) * W, (p.y + p.vy * t) * H]);
+    if (on){
+      scx.lineWidth = 1.2; scx.strokeStyle = "rgba(139,127,232,.62)";
+      scx.beginPath();
+      for (const [a, b] of f.edges){ scx.moveTo(...P[a]); scx.lineTo(...P[b]); }
+      scx.stroke();
+    }
+    f.pts.forEach((p, i) => {
+      scx.beginPath(); scx.arc(P[i][0], P[i][1], on ? 3.4 : 1.9, 0, 7);
+      scx.fillStyle = on ? "#CFC8FF" : `rgba(233,238,235,${0.42 * dim})`;
+      scx.fill();
+      if (on){
+        scx.font = '11px "IBM Plex Mono", monospace';
+        scx.fillStyle = "rgba(207,200,255,.92)";
+        scx.textAlign = P[i][0] > W * 0.8 ? "right" : "left";
+        scx.fillText(p.label, P[i][0] + (P[i][0] > W * 0.8 ? -8 : 8), P[i][1] - 8);
+      }
+    });
+  });
+  scx.textAlign = "left";
+}
+FIGURES.forEach((f, i) => {
+  const b = document.createElement("button");
+  b.type = "button"; b.textContent = f.name;
+  b.onclick = () => { active = active === i ? null : i; syncSky(); };
+  $("skybar").appendChild(b);
+});
+const count = document.createElement("span");
+count.className = "skycount"; $("skybar").appendChild(count);
+function syncSky(){
+  [...$("skybar").querySelectorAll("button")].forEach((b, i) => b.setAttribute("aria-pressed", active === i));
+  const inFig = active === null ? 0 : FIGURES[active].stars.length;
+  const total = FIELD.length + FIGURES.reduce((s, f) => s + f.pts.length, 0);
+  count.innerHTML = active === null
+    ? `in the field: <b>${total}</b> · no figure selected`
+    : `in the field: <b>${total}</b> · in this figure: <b>${inFig}</b>`;
+}
+syncSky();
+
+/* ══ 02 · the solid ═══════════════════════════════════════════ */
+const compose = (a, b) => b.map((_, i) => a[b[i]]);
+const pkey = p => p.join(",");
+function canonFace(f){
+  const n = f.length;
+  const cmp = (x, y) => { for (let i = 0; i < n; i++) if (x[i] !== y[i]) return x[i] - y[i]; return 0; };
+  let best = f.slice();
+  const go = a => { for (let s = 0; s < n; s++){ const c = a.map((_, i) => a[(s + i) % n]); if (cmp(c, best) < 0) best = c; } };
+  go(f); go(f.slice().reverse());
+  return best;
+}
+const GL = ["a", "b", "c"];
+const layers = (() => {
+  const n = STAR.v.length, id = Array.from({length: n}, (_, i) => i);
+  const seen = new Set([pkey(id)]), fs = new Set(), out = [];
+  let front = [{p: id, w: []}], guard = 0;
+  while (front.length && guard++ < 20){
+    const got = [];
+    for (const {p, w} of front){
+      const f = canonFace(STAR.seed.map(i => p[i])), k = pkey(f);
+      if (!fs.has(k)){ fs.add(k); got.push({f, w}); }
+    }
+    if (got.length) out.push(got);
+    const nx = [];
+    for (const {p, w} of front)
+      STAR.gens.forEach((g, gi) => { const c = compose(g, p), ck = pkey(c);
+        if (!seen.has(ck)){ seen.add(ck); nx.push({p: c, w: [gi, ...w]}); } });
+    front = nx;
+  }
+  return out;
+})();
+let shown = [], depth = -1, yaw = 0.6;
+const pc = $("poly"), pcx = pc.getContext("2d");
+function pAdvance(){
+  if (depth + 1 >= layers.length) return;
+  depth++;
+  layers[depth].forEach(x => shown.push(x));
+  const nw = layers[depth][layers[depth].length - 1];
+  // The word is accumulated newest-first, so reverse it: left to right is
+  // then the order the turns are actually applied, starting from the seed.
+  $("pword").textContent = nw.w.length
+    ? nw.w.slice().reverse().map(g => GL[g]).join(" → ") : "the seed itself";
+  $("pcount").textContent = shown.length + (shown.length === 1 ? " face" : " faces");
+  const done = depth + 1 >= layers.length;
+  $("pstep").disabled = done; $("pall").disabled = done;
+}
+function pDraw(){
+  const S = pc.width, H = pc.height, k = Math.min(S, H) / 8.2;
+  const cs = getComputedStyle(document.body);
+  const inkRGB = cs.getPropertyValue("--ink").trim();
+  const acc = cs.getPropertyValue("--invariant").trim();
+  pcx.clearRect(0, 0, S, H);
+  const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(.42), sp = Math.sin(.42);
+  const pts = STAR.v.map(([x, y, z]) => {
+    const X = x * cy - z * sy, Z1 = x * sy + z * cy;
+    return [S / 2 + X * k, H / 2 - (y * cp - Z1 * sp) * k, y * sp + Z1 * cp];
+  });
+  pcx.lineJoin = pcx.lineCap = "round";
+  shown.map((x, i) => ({...x, i, z: x.f.reduce((s, v) => s + pts[v][2], 0) / x.f.length}))
+    .sort((a, b) => a.z - b.z)
+    .forEach(({f, i, z}) => {
+      const d = (z + 3) / 6;
+      pcx.beginPath();
+      f.forEach((v, j) => j ? pcx.lineTo(pts[v][0], pts[v][1]) : pcx.moveTo(pts[v][0], pts[v][1]));
+      pcx.closePath();
+      if (i === 0){ pcx.fillStyle = acc; pcx.globalAlpha = .20; pcx.fill(); pcx.globalAlpha = 1;
+                    pcx.strokeStyle = acc; pcx.lineWidth = 3.2; }
+      else { pcx.fillStyle = inkRGB; pcx.globalAlpha = .03 + d * .05; pcx.fill();
+             pcx.globalAlpha = .20 + d * .34; pcx.strokeStyle = inkRGB; pcx.lineWidth = 1.1; }
+      pcx.stroke(); pcx.globalAlpha = 1;
+    });
+  shown[0].f.forEach(v => { pcx.beginPath(); pcx.arc(pts[v][0], pts[v][1], 4.6, 0, 7);
+                            pcx.fillStyle = acc; pcx.fill(); });
+}
+$("pstep").onclick = pAdvance;
+$("pall").onclick = () => { while (depth + 1 < layers.length) pAdvance(); };
+$("preset").onclick = () => { shown = []; depth = -1; pAdvance(); };
+pAdvance();
+(function frame(t){ yaw += .0022; pDraw(); skyDraw(t); requestAnimationFrame(frame); })(0);
+
+/* ══ 03 + 04 · the rings ══════════════════════════════════════ */
+const rotate = (a, s) => a.map((_, i) => a[(s + i) % a.length]);
+/* Booth (1980), O(n) — correct in the presence of repeated elements,
+   where the naive "rotate until it looks smallest" scan is easy to get wrong. */
+function leastRot(a){
+  const n = a.length; if (!n) return 0;
+  const s = a.concat(a), fail = new Array(2 * n).fill(-1);
+  let k = 0;
+  for (let j = 1; j < 2 * n; j++){
+    const sj = s[j]; let i = fail[j - k - 1];
+    while (i !== -1 && sj !== s[k + i + 1]){ if (sj < s[k + i + 1]) k = j - i - 1; i = fail[i]; }
+    if (sj !== s[k + i + 1]){ if (sj < s[k]) k = j; fail[j - k] = -1; }
+    else fail[j - k] = i + 1;
+  }
+  return k;
+}
+function canonicalRing(s){
+  const f = rotate(s, leastRot(s)), rv = s.slice().reverse(), bw = rotate(rv, leastRot(rv));
+  return f.join(SEP) <= bw.join(SEP) ? f : bw;
+}
+const TERMS = ["Cartography", "Map projections", "Geodesy", "Surveying", "Topographic mapping"];
+
+function buildNodes(host){
+  TERMS.forEach(() => {
+    const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+    g.setAttribute("class", "node");
+    g.innerHTML = '<circle r="30"></circle><text></text>';
+    host.appendChild(g);
+  });
+  return [...host.children];
+}
+function place(els, order){
+  order.forEach((termIdx, i) => {
+    const a = (i / order.length) * 2 * Math.PI - Math.PI / 2;
+    els[i].style.transform =
+      `translate(${150 + 104 * Math.cos(a)}px, ${150 + 104 * Math.sin(a)}px)`;
+    const w = TERMS[termIdx].split(" ");
+    els[i].querySelector("text").innerHTML = w
+      .map((x, k) => `<tspan x="0" dy="${k === 0 ? -(w.length - 1) * 5 : 10}">${x}</tspan>`).join("");
+  });
+}
+
+/* — section 03 — */
+let seq = TERMS.map((_, i) => i);
+const seenR = new Set(), formsR = new Set();
+const nEls = buildNodes($("nodes"));
+async function ringRender(){
+  place(nEls, seq);
+  const words = seq.map(i => TERMS[i]);
+  const c = canonicalRing(words);
+  seenR.add(words.join(SEP)); formsR.add(c.join(SEP));
+  $("recorded").textContent = words.join("  ·  ");
+  $("canon").textContent = c.join("  ·  ");
+  $("digest").textContent = (await sha(c.join(SEP))).slice(0, 30) + "…";
+  $("seen").textContent = seenR.size;
+  $("forms").textContent = formsR.size;
+}
+$("rot").onclick = () => { seq = rotate(seq, 1); ringRender(); };
+$("flip").onclick = () => { seq = seq.slice().reverse(); ringRender(); };
+ringRender();
+
+/* — section 04 comparator — */
+let seq2 = TERMS.map((_, i) => i);
+const nEls2 = buildNodes($("nodes2"));
+let cutoff = 0.8;
+function compare(){
+  place(nEls2, seq2);
+  const [score, ruleFlag] = PERM[seq2.join("")];
+  const ruleSame = ruleFlag === 1;          // JSON gives 1/0, not true/false
+  const scoreSame = score >= cutoff;
+
+  $("rtag").className = "vtag " + (ruleSame ? "ok" : "no");
+  $("rtag").textContent = ruleSame ? "same loop" : "different loop";
+  $("rsay").textContent = ruleSame
+    ? "Same members, same cyclic order. The key is unchanged."
+    : "The cyclic order differs, so this is a different loop.";
+
+  $("stag").className = "vtag " + (scoreSame ? "ok" : "no");
+  $("stag").textContent = scoreSame ? "same loop" : "different loop";
+  $("ssay").textContent = scoreSame
+    ? "Similar enough to clear the cutoff."
+    : "Too different to clear the cutoff.";
+  $("sval").textContent = `similarity ${score.toFixed(3)} · cutoff ${cutoff.toFixed(2)}`;
+
+  const d = $("disagree");
+  if (ruleSame === scoreSame){
+    d.className = "disagree quiet";
+    d.textContent = ruleSame && score === 1
+      ? "The authored arrangement. Nothing to disagree about yet — rotate it."
+      : "Both agree here. Keep going; they come apart quickly.";
+  } else {
+    d.className = "disagree";
+    d.textContent = ruleSame
+      ? "They disagree. This is the same loop, and the score is about to throw it away as a different one."
+      : "They disagree. This is a different loop, and the score is about to merge it into the first.";
+  }
+}
+$("rot2").onclick = () => { seq2 = rotate(seq2, 1); compare(); };
+$("flip2").onclick = () => { seq2 = seq2.slice().reverse(); compare(); };
+$("swap2").onclick = () => {
+  const i = Math.floor(Math.random() * 5);
+  const j = (i + 1 + Math.floor(Math.random() * 4)) % 5;
+  [seq2[i], seq2[j]] = [seq2[j], seq2[i]];
+  compare();
+};
+
+/* — strip plot — */
+(function strip(){
+  const svg = $("strip"), NS = "http://www.w3.org/2000/svg";
+  const W = 700, L = 88, R = 16, x0 = L, x1 = W - R;
+  const X = v => x0 + ((v - 0.25) / 0.75) * (x1 - x0);
+  const lanes = [{d: POS, y: 52, cls: "same", label: "same"},
+                 {d: NEG, y: 124, cls: "diff", label: "different"}];
+  let out = "";
+  for (let t = 0.3; t <= 0.9001; t += 0.1){
+    out += `<line x1="${X(t)}" y1="26" x2="${X(t)}" y2="150" stroke="var(--rule)" stroke-width="1"/>`
+         + `<text x="${X(t)}" y="168" fill="var(--muted)" font-size="11"
+             font-family="IBM Plex Mono, monospace" text-anchor="middle">${t.toFixed(1)}</text>`;
+  }
+  out += `<line id="cut" x1="0" y1="18" x2="0" y2="152" stroke="var(--diff)"
+            stroke-width="2" stroke-dasharray="4 3"/>`
+       + `<text id="cutlab" x="0" y="14" fill="var(--diff)" font-size="11"
+            font-family="IBM Plex Mono, monospace" text-anchor="middle">cutoff</text>`;
+  lanes.forEach(ln => {
+    out += `<text x="${x0 - 10}" y="${ln.y + 4}" fill="var(--muted)" font-size="11"
+              font-family="IBM Plex Mono, monospace" text-anchor="end">${ln.label}</text>`;
+    ln.d.forEach((v, i) => {
+      const jitter = ((i * 37) % 11 - 5) * 2.6;
+      out += `<circle cx="${X(v).toFixed(1)}" cy="${(ln.y + jitter).toFixed(1)}" r="3.4"
+                fill="var(--${ln.cls})" fill-opacity="0.55"
+                stroke="var(--paper)" stroke-width="1.2"><title>${ln.label} structure · similarity ${v.toFixed(3)}</title></circle>`;
+    });
+  });
+  out += `<text x="${x0}" y="186" fill="var(--muted)" font-size="11"
+            font-family="IBM Plex Mono, monospace" text-anchor="middle">similarity score →</text>`;
+  svg.innerHTML = out;
+  $("stripcap").textContent =
+    "Weakest same-structure pair 0.281. Strongest different-structure pair 0.926. "
+    + "All 86 different-structure pairs score at or above the weakest same-structure pair, "
+    + "so no vertical line separates the two rows.";
+  window._moveCut = c => {
+    $("cut").setAttribute("x1", X(c)); $("cut").setAttribute("x2", X(c));
+    $("cutlab").setAttribute("x", X(c));
+  };
+})();
+
+/* — threshold sweep — */
+const SWEEP = {"0.5":[97,83],"0.55":[75,82],"0.6":[64,78],"0.65":[40,64],"0.7":[34,58],
+               "0.75":[24,37],"0.8":[11,29],"0.85":[1,6],"0.9":[0,1],"0.95":[0,0],"1":[0,0]};
+function sweep(){
+  const key = String(cutoff);
+  const [caught, merged] = SWEEP[key] || SWEEP["0.8"];
+  $("thrval").textContent = cutoff.toFixed(2);
+  $("thrcaught").textContent = `${caught} of 114 · missed ${114 - caught}`;
+  $("thrmerged").textContent = `${merged} of 86`;
+  window._moveCut(cutoff);
+}
+$("thr").oninput = e => { cutoff = parseFloat(e.target.value); sweep(); compare(); };
+sweep(); compare();
+</script>
+{% endraw %}
+</body>
+</html>

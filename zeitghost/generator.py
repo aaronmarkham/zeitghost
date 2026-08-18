@@ -265,6 +265,18 @@ def generate_site(articles: list[AnalyzedArticle],
     )
     log.info("Generated about.html")
 
+    # --- constellations.html — canonical forms explainer -------------------
+    # Standalone long-form page for spiritwriter.ai (not news.spiritwriter.ai),
+    # rendered like landing.html rather than extending base.html: the news
+    # masthead would be wrong over an essay. Takes base_ctx only for the
+    # footer signature row.
+    constellations_tmpl = env.get_template("constellations.html")
+    (output_dir / "constellations.html").write_text(
+        constellations_tmpl.render(**base_ctx),
+        encoding="utf-8",
+    )
+    log.info("Generated constellations.html")
+
     # --- analytics.html — overall + distribution + leaning + categories ---
     analytics_tmpl = env.get_template("analytics.html")
     (output_dir / "analytics.html").write_text(

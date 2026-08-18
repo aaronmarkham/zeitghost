@@ -260,3 +260,54 @@ def test_package_imports_from_clean_cwd(tmp_path: Path):
         f"stderr: {result.stderr}"
     )
     assert "ok" in result.stdout
+
+
+def test_constellations_template_renders_standalone():
+    """The canonical-forms essay is a standalone page for spiritwriter.ai,
+    like landing.html — it must not inherit the news masthead, and its
+    interactive parts must survive Jinja rendering untouched."""
+    from jinja2 import Environment, FileSystemLoader
+
+    env = Environment(
+        loader=FileSystemLoader(str(REPO_ROOT / "templates")),
+        autoescape=True,
+    )
+    rendered = env.get_template("constellations.html").render(
+        sw_core_version="0.10.1",
+        zeitghost_commit="abc1234deadbeef",
+    )
+    # A complete document, not a base.html fragment
+    assert rendered.lstrip().startswith("<!doctype html>")
+    assert "Daily Bias Index" not in rendered
+    # The measured figures the essay argues from
+    assert "114" in rendered and "200" in rendered
+    # Precomputed scorer output must pass through autoescape intact — the
+    # widget is wrong, not merely ugly, if these get mangled.
+    assert '"01234":[1.0,1]' in rendered
+    assert "leastRot" in rendered
+    # Signature row wired to the live build
+    assert "spiritwriter v0.10.1" in rendered
+    assert "commit/abc1234deadbeef" in rendered
+    assert ">abc1234<" in rendered
+    # Social preview metadata, same as landing
+    assert 'property="og:image"' in rendered
+    assert 'name="twitter:card"' in rendered
+    assert 'href="https://spiritwriter.ai/constellations.html"' in rendered
+
+
+def test_constellations_template_degrades_without_build_metadata():
+    """With no version or commit resolvable the signature row still renders,
+    without advertising a stale stand-in version."""
+    from jinja2 import Environment, FileSystemLoader
+
+    env = Environment(
+        loader=FileSystemLoader(str(REPO_ROOT / "templates")),
+        autoescape=True,
+    )
+    rendered = env.get_template("constellations.html").render(
+        sw_core_version="",
+        zeitghost_commit="",
+    )
+    assert "library · spiritwriter" in rendered
+    assert "deploy · local" in rendered
+    assert "spiritwriter v" not in rendered
