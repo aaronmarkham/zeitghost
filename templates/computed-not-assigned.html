@@ -3,26 +3,26 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Constellations — spiritwriter</title>
+<title>Computed, Not Assigned &mdash; spiritwriter</title>
 <meta name="description" content="Rotations, reflections and reorderings make one structure look like many. Computing a single canonical form settles them exactly — measured against 200 pairs where similarity scoring cannot." />
-<meta property="og:title" content="Constellations — picking a figure out of the field" />
+<meta property="og:title" content="Computed, not assigned — one agreed form for a structure" />
 <meta property="og:description" content="Rotations, reflections and reorderings make one structure look like many. Computing a single canonical form settles them exactly — measured against 200 pairs where similarity scoring cannot." />
 <meta property="og:type" content="article" />
-<meta property="og:url" content="https://spiritwriter.ai/constellations.html" />
+<meta property="og:url" content="https://spiritwriter.ai/computed-not-assigned.html" />
 <meta property="og:image" content="https://spiritwriter.ai/static/images/spirit-animals/spirit.svg" />
 <meta property="og:site_name" content="spiritwriter" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Constellations — picking a figure out of the field" />
+<meta name="twitter:title" content="Computed, not assigned — one agreed form for a structure" />
 <meta name="twitter:description" content="Rotations, reflections and reorderings make one structure look like many. Computing a single canonical form settles them exactly — measured against 200 pairs where similarity scoring cannot." />
 <meta name="twitter:image" content="https://spiritwriter.ai/static/images/spirit-animals/spirit.svg" />
-<link rel="canonical" href="https://spiritwriter.ai/constellations.html" />
+<link rel="canonical" href="https://spiritwriter.ai/computed-not-assigned.html" />
 <link rel="icon" type="image/x-icon" href="/static/favicon.ico" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet" />
 {# Standalone page, like landing.html — deliberately not extending base.html,
    whose news masthead ("Daily Bias Index · N articles") would be wrong over an
-   essay. Served at spiritwriter.ai/constellations.html. #}
+   essay. Served at spiritwriter.ai/computed-not-assigned.html. #}
 <style>
 :root{
   --plate:#DCE0DC; --paper:#EFF1EE; --sunk:#E7EAE7;
@@ -213,7 +213,7 @@ footer p{margin:0 0 8px;max-width:72ch;color:var(--muted)}
 
 <header>
   <p class="eyebrow">On figures, fields, and one idea borrowed from geometry</p>
-  <h1>Pick a <em>constellation</em>.<br>Reason inside it.</h1>
+  <h1><em>Computed</em>,<br>not assigned.</h1>
   <p class="lede">Nobody thinks about the whole sky. You pick out a figure — a handful of stars and the lines between them — give it a name, and from then on you can point at it, hand it to someone else, and reason inside it without loading the rest. This is about what happens when you do that to information, and where the idea for doing it came from.</p>
 </header>
 
@@ -442,6 +442,8 @@ footer p{margin:0 0 8px;max-width:72ch;color:var(--muted)}
   <p>Connor Hill, <em>The complete set of noble polyhedra</em> — <a href="https://arxiv.org/abs/2607.28711">arxiv.org/abs/2607.28711</a></p>
   <p>His code and shape library — <a href="https://github.com/Plasmath/noble-tools-revised">github.com/Plasmath/noble-tools-revised</a></p>
   <p>Project profile — <a href="https://www.societyforscience.org/regeneron-sts/2026-student-finalists/connor-hill/">Society for Science</a></p>
+  <p>The library — <a href="https://github.com/aaronmarkham/spiritwriter-core">spiritwriter-core</a> &middot; reference for these functions — <a href="https://github.com/aaronmarkham/spiritwriter-core/blob/main/docs/canonical-forms.md">docs/canonical-forms.md</a></p>
+  <p>The harness behind the two hundred pairs — <a href="https://github.com/aaronmarkham/spiritwriter-core/tree/main/benchmarks/eval/structural_accuracy">benchmarks/eval/structural_accuracy</a></p>
   <p style="margin-top:16px">Solid coordinates are Hill's published data. The sky, the solid and the rings are computed live in your browser. The two hundred pairs, the scores and the sweep are measured output from the project's structural-accuracy harness — same scorer, same corpora, nothing staged.</p>
   <p style="margin-top:16px">
     <a href="/">spiritwriter.ai</a>
