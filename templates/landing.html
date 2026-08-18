@@ -1133,15 +1133,15 @@
 
     <div class="manifesto reveal">
       <div class="left">
-        <p class="lede">There's no standard library for the layer beneath the agent. So you keep rebuilding it.</p>
+        <p class="lede">There's no standard library for the layer beneath the agent. So you keep rebuilding it &mdash; and the part everyone skips is the part that would let you prove any of it.</p>
         <div class="signature">— filed under <span style="color:var(--seal)">/substrate</span></div>
       </div>
       <div class="body">
-        <p>Every agentic app re-solves the same problems. Where does what the agent learned live — and how do you keep it from drifting into contradiction? How do you hand a sub-task to another agent without handing over the keys to everything? And when something breaks three steps back, can you <strong>prove</strong> what actually happened?</p>
+        <p>Every agentic app re-solves the same problems. When something goes wrong three steps back, can you <strong>prove</strong> what actually happened &mdash; or only reconstruct it from whatever the run happened to print? Where does what the agent learned live, and how do you keep it from drifting into contradiction? How do you hand a sub-task to another agent without handing over the keys to everything?</p>
 
         <p>So you rebuild the glue for each app, slightly different every time. Or you eat the misalignments, the delegation failures, the memory drift. Or you rent a managed service that takes custody of your data <em>and</em> your latency budget.</p>
 
-        <p>Few teams do provable tracing or scoped entitlements without standing up heavy infrastructure. The layer <strong>beneath</strong> the agent has been left to improvisation — re-glued in every codebase, owned by none of them.</p>
+        <p>Few teams do provable tracing or scoped entitlements without standing up heavy infrastructure, so the hardest question &mdash; <em>what actually happened?</em> &mdash; gets answered by logs the system wrote about itself. The layer <strong>beneath</strong> the agent has been left to improvisation: re-glued in every codebase, owned by none of them, and taken on faith.</p>
       </div>
     </div>
   </section>
@@ -1159,12 +1159,13 @@
     <div class="code-spread">
       <div class="code-narrative reveal">
         <h3>The layer your stack is missing.</h3>
-        <p>spiritwriter is content-addressed memory, hash-chained traces, scoped entitlements, and deterministic entity resolution — composable primitives you dial from <strong>fully public and provable</strong> to <strong>fully private and zero-knowledge</strong> by changing one setting.</p>
+        <p>spiritwriter is content-addressed memory, hash-chained traces, scoped entitlements, computed identity, and deterministic entity resolution. Composable primitives with one property in common: each produces something that can be <strong>checked independently</strong>, without taking the system's word for it. Dial them from <strong>fully public and provable</strong> to <strong>fully private and zero-knowledge</strong> by changing one setting.</p>
         <p>Bring your own everything-else. spiritwriter handles what those layers leave out.</p>
         <ul>
-          <li><span class="k">memory</span><span>content-addressed shards with lineage + decay.</span></li>
-          <li><span class="k">provenance</span><span>hash-chained, signable traces.</span></li>
+          <li><span class="k">memory</span><span>content-addressed shards — same content, same id.</span></li>
+          <li><span class="k">provenance</span><span>hash-chained traces, signable and chain-verifiable.</span></li>
           <li><span class="k">delegation</span><span>scoped entitlements, enforced before decrypt.</span></li>
+          <li><span class="k">identity</span><span>canonical forms, computed rather than registered.</span></li>
           <li><span class="k">resolution</span><span>deterministic entity IDs, no embeddings.</span></li>
         </ul>
       </div>
@@ -1181,7 +1182,7 @@
           </div>
           <div class="layer sw">
             <span class="name">spiritwriter</span>
-            <span class="detail">memory · provenance · delegation · resolution</span>
+            <span class="detail">memory · provenance · delegation · identity · resolution</span>
           </div>
         </figure>
         <p class="stack-note">It's not an agent framework, and it's not a vector database. It's what those sit on.</p>
